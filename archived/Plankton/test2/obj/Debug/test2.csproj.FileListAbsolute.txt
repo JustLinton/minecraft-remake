@@ -1,0 +1,8 @@
+E:\Plankton\Plankton\test2\bin\Debug\test2.exe.config
+E:\Plankton\Plankton\test2\bin\Debug\test2.exe
+E:\Plankton\Plankton\test2\bin\Debug\test2.pdb
+E:\Plankton\Plankton\test2\bin\Debug\Plankton.dll
+E:\Plankton\Plankton\test2\bin\Debug\Plankton.pdb
+E:\Plankton\Plankton\test2\obj\Debug\test2.csprojResolveAssemblyReference.cache
+E:\Plankton\Plankton\test2\obj\Debug\test2.exe
+E:\Plankton\Plankton\test2\obj\Debug\test2.pdb

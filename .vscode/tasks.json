@@ -1,0 +1,17 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build", 
+            "type": "shell",
+            "command": "g++",
+            "args": [
+                "main.cpp","-o","main","-lGL","-lGLU","-lglut" ,"-lGLESv2"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}
