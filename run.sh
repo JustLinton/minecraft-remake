@@ -1,6 +1,8 @@
 #!/bin/bash
-progName=texttest
+progName=l7
+echo 清理..
+rm ${progName}.out
 echo 正在编译..
-g++ ${progName}.cpp -o ${progName} -lGL -lglfw -lGLEW -lSOIL -lfreetype
+g++ ${progName}.cpp -o ${progName}.out -lGL -lglfw -lGLEW -lSOIL -lassimp -lfreetype
 echo 运行..
-./${progName}
+./${progName}.out

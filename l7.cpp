@@ -20,15 +20,20 @@
 
 // Other Libs
 #include <SOIL/SOIL.h>
+#include <ft2build.h>
+#include FT_FREETYPE_H
 
 //game imports
 #include "Utils.h"
 #include "Blocks.h"
 #include "IndependentModels.h"
+#include "Text.h"
+#include "GUI.h"
 
 
 //game mode
 bool gameMode=0;
+int sel=0;
 const float blockLength=0.5405f;
 
 // Properties
@@ -41,7 +46,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void Do_Movement();
 
 // Camera
-Camera camera(glm::vec3(0.0f, 4.0f*blockLength, 0.0f));
+Camera camera(glm::vec3(0.0f, 3.0f*blockLength, 0.0f));
 bool keys[1024];
 GLfloat lastX = 400, lastY = 300;
 bool firstMouse = true;
@@ -49,7 +54,8 @@ bool firstMouse = true;
 GLfloat deltaTime = 0.0f;
 GLfloat lastFrame = 0.0f;
 
-int sceneSize=20;
+int sceneSize=30;
+
 
 // The MAIN function, from here we start our application and run our Game loop
 int main()
@@ -82,18 +88,22 @@ int main()
     // Setup some OpenGL options
     glEnable(GL_DEPTH_TEST);
 
-    // Setup and compile our shaders
+        // Setup and compile our shaders
     // Shader shader("shaders/blinn-phong-texture.vs", "shaders/blinn-phong-texture.frag");
     Shader shader("shaders/model_loading.vs", "shaders/model_loading.frag");
-    
+    Shader textShader("shaders/text.vs", "shaders/text.frag");
+    Shader guiShader("shaders/gui.vs", "shaders/gui.frag");
+
+    initTextRenderer(screenWidth,screenHeight,textShader);
+    initGUIRenderer(screenWidth,screenHeight,guiShader);
     initBlocks();
 
-    // Model pickaxeModel("models/mc_diamondpickaxe/Diamond-Pickaxe.obj");
-    // Model chestModel("models/mc_chest/chest.obj");
+    Model pickaxeModel("models/mc_diamondpickaxe/Diamond-Pickaxe.obj");
+    Model chestModel("models/mc_chest/chest.obj");
     // Model grassBlockModel("models/mc_grassblock/Grass_Block.obj");
-    // Model horseModel("models/mc_horse/source/horse.fbx");
-    // Model torchModel("models/mc-torch/Torch.obj");
-    // Model doorModel("models/mc_door/Wooden-Door.obj");
+    Model horseModel("models/mc_horse/source/horse.fbx");
+    Model torchModel("models/mc-torch/Torch.obj");
+    Model doorModel("models/mc_door/Wooden-Door.obj");
 
     // Draw in wireframe
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -156,51 +166,61 @@ int main()
         //可以开始渲染方块了
 
         //草方块地板
-        // for(int i=-sceneSize/2;i<=sceneSize/2;i++)
-        //     for(int j=-sceneSize/2;j<=sceneSize/2;j++){
-        //         blockStore[BlockType.GRASS_BLOCK].render(shader,BlockPosition(i,0,j));
-        //     }
-
-        blockStore[BlockType.GRASS_BLOCK].render(shader,BlockPosition(0,0,0));
-
-        // model = unitMat;
-        // model = glm::translate(model, glm::vec3(0.5f, -0.65f, 0.0f)); // Translate it down a bit so it's at the center of the scene
-        // model = glm::scale(model, glm::vec3(0.02f, 0.02f, 0.02f));	// It's a bit too big for our scene, so scale it down
-        // model = glm::rotate(model,glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        // model = glm::rotate(model,glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-        // glUniformMatrix4fv(glGetUniformLocation(shader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        // pickaxeModel.Draw(shader);
+        for(int i=-sceneSize/2;i<=sceneSize/2;i++)
+            for(int j=-sceneSize/2;j<=sceneSize/2;j++){
+                blockStore[BlockType.GRASS_BLOCK].render(shader,BlockPosition(i,0,j));
+            }
 
 
-        // model = unitMat;
-        // model = glm::translate(model, glm::vec3(0.5f, -0.95f, 1.0f)); // Translate it down a bit so it's at the center of the scene
-        // model = glm::scale(model, glm::vec3(0.35f, 0.35f, 0.35f));	// It's a bit too big for our scene, so scale it down
-        // glUniformMatrix4fv(glGetUniformLocation(shader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        // torchModel.Draw(shader);
+        model = unitMat;
+        model = glm::translate(model, glm::vec3(0.5f, 1.05f, 0.0f)); // Translate it down a bit so it's at the center of the scene
+        model = glm::scale(model, glm::vec3(0.02f, 0.02f, 0.02f));	// It's a bit too big for our scene, so scale it down
+        model = glm::rotate(model,glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        model = glm::rotate(model,glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+        glUniformMatrix4fv(glGetUniformLocation(shader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        pickaxeModel.Draw(shader);
 
 
-        // model=unitMat;
-        // model = glm::translate(model, glm::vec3(-0.5f, -0.85f, 0.0f)); // Translate it down a bit so it's at the center of the scene
-        // model = glm::scale(model, glm::vec3(0.3f, 0.3f, 0.3f));	// It's a bit too big for our scene, so scale it down
-        // model = glm::rotate(model,glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        // glUniformMatrix4fv(glGetUniformLocation(shader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        // chestModel.Draw(shader);
+        model = unitMat;
+        model = glm::translate(model, glm::vec3(0.5f, 0.85f, 1.0f)); // Translate it down a bit so it's at the center of the scene
+        model = glm::scale(model, glm::vec3(0.35f, 0.35f, 0.35f));	// It's a bit too big for our scene, so scale it down
+        glUniformMatrix4fv(glGetUniformLocation(shader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        torchModel.Draw(shader);
 
-        // model=unitMat;
-        // model = glm::translate(model, glm::vec3(-4.0f, -0.4f, 3.0f)); // Translate it down a bit so it's at the center of the scene
-        // model = glm::scale(model, glm::vec3(0.04f, 0.04f, 0.04f));	// It's a bit too big for our scene, so scale it down
-        // model = glm::rotate(model,glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        // glUniformMatrix4fv(glGetUniformLocation(shader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        // horseModel.Draw(shader);
 
-        // model=unitMat;
-        // model = glm::translate(model, glm::vec3(-0.5f, -0.43f, 7.0f)); // Translate it down a bit so it's at the center of the scene
-        // model = glm::scale(model, glm::vec3(0.31f, 0.31f, 0.31f));	// It's a bit too big for our scene, so scale it down
-        // model = glm::rotate(model,glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        // glUniformMatrix4fv(glGetUniformLocation(shader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        // doorModel.Draw(shader);
+        model=unitMat;
+        model = glm::translate(model, glm::vec3(-0.5f, -0.85f, 0.0f)); // Translate it down a bit so it's at the center of the scene
+        model = glm::scale(model, glm::vec3(0.3f, 0.3f, 0.3f));	// It's a bit too big for our scene, so scale it down
+        model = glm::rotate(model,glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        glUniformMatrix4fv(glGetUniformLocation(shader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        chestModel.Draw(shader);
 
+        model=unitMat;
+        model = glm::translate(model, glm::vec3(-4.0f, -0.4f, 3.0f)); // Translate it down a bit so it's at the center of the scene
+        model = glm::scale(model, glm::vec3(0.04f, 0.04f, 0.04f));	// It's a bit too big for our scene, so scale it down
+        model = glm::rotate(model,glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        glUniformMatrix4fv(glGetUniformLocation(shader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        horseModel.Draw(shader);
+
+        model=unitMat;
+        model = glm::translate(model, glm::vec3(-0.5f, -0.43f, 7.0f)); // Translate it down a bit so it's at the center of the scene
+        model = glm::scale(model, glm::vec3(0.31f, 0.31f, 0.31f));	// It's a bit too big for our scene, so scale it down
+        model = glm::rotate(model,glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        glUniformMatrix4fv(glGetUniformLocation(shader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        doorModel.Draw(shader);
+
+
+        // blockStore[BlockType.GRASS_BLOCK].render(shader,BlockPosition(0,0,0));
+
+        RenderText(textShader, "+", screenWidth/2.0f, screenHeight/2.0f+10.0f, 0.7f, glm::vec3(1.0f, 1.0f, 1.0f));
+        RenderText(textShader, "Minecraft    0.2.1", 20.0f, screenHeight-35.0f, 0.45f, glm::vec3(1.0f, 1.0f, 1.0f));
+
+        // RenderGUI(guiShader, "img/itembarsel.png" ,screenWidth/2.0f-182.0f*1.75f, 80.0f, 24.0f,24.0f,3.5f, 0.25f);
+
+        // RenderGUI(guiShader ,screenWidth/2.0f-182.0f*1.75f, 30.0f, 182.0f,22.0f,3.5f,0.75f);
+        RenderGUI(guiShader,screenWidth,screenHeight,sel);
     
+
         // Swap the buffers
         glfwSwapBuffers(window);
     }
@@ -258,7 +278,14 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
-    camera.ProcessMouseScroll(yoffset);
+    // camera.ProcessMouseScroll(yoffset);
+    if(yoffset>0){
+        if(sel+1>8)sel=8;
+        else sel+=1;
+    } else{
+        if(sel-1<0)sel=0;
+        else sel-=1;
+    }
 }
 
 #pragma endregion
