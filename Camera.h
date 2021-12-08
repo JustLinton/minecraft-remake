@@ -20,7 +20,9 @@ enum Camera_Movement {
     LEFT,
     RIGHT,
     JUMP,
-    SNEAK
+    SNEAK,
+    SPRINT,
+    TEST
 };
 
 // Default camera values
@@ -48,6 +50,8 @@ public:
     std::map<char,float> pressTimeAcc;
     std::map<char,float> releaseTimeAcc;
     bool isSneaking;
+    bool isFlying;
+    bool isSprinting;
     // Eular Angles
     GLfloat Yaw;
     GLfloat Pitch;
@@ -65,6 +69,7 @@ public:
         this->Pitch = pitch;
         this->updateCameraVectors();
         initPhysics();
+        initOperation();
     }
     // Constructor with scalar values
     Camera(GLfloat posX, GLfloat posY, GLfloat posZ, GLfloat upX, GLfloat upY, GLfloat upZ, GLfloat yaw, GLfloat pitch) : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(STANDARDSPEED), MouseSensitivity(SENSITIVTY), Zoom(ZOOM)
@@ -75,6 +80,7 @@ public:
         this->Pitch = pitch;
         this->updateCameraVectors();
         initPhysics();
+        initOperation();
     }
 
     // Returns the view matrix calculated using Eular Angles and the LookAt Matrix
@@ -84,6 +90,11 @@ public:
     }
 
   
+    void initOperation(){
+        isFlying=false;
+        isSneaking=false;
+        isSprinting=false;
+    }
 
     void initTiming(char c){
         pressTimeAcc[c]=0.0f;
@@ -99,18 +110,31 @@ public:
         initTiming('.');
         //',' is lshift.
         initTiming(',');
+        //'`' is lshift.
+        initTiming('`');
+        //'=' is lcontrol.
+        initTiming('=');
         this->Velocity=glm::vec3(0.0f);
         this->OtherVelocity=glm::vec3(0.0f);
     }
 
 
-    float walkSpeedFunction(float x,GLfloat deltaTime){
-        if(x<=0.25f)return 4.0f*x*this->MovementSpeed* deltaTime;
-        if(x>0.25f)return this->MovementSpeed* deltaTime;
+    float walkSpeedFunction(float x,GLfloat deltaTime,float MovementSpeed){
+        if(x<=0.2f)return 5.0f*x*MovementSpeed* deltaTime;
+        return MovementSpeed* deltaTime;
     }
 
-    float stopWalkingSpeedFunction(float x,GLfloat deltaTime){
-        return std::max(0.0f,(1.0f-4.5f*x)*this->MovementSpeed* deltaTime);
+    float flySpeedFunction(float x,GLfloat deltaTime,float MovementSpeed){
+        if(x<=0.5f)return 4.0f*x*x*MovementSpeed* deltaTime;
+        return MovementSpeed* deltaTime;
+    }
+
+    float stopWalkingSpeedFunction(float x,GLfloat deltaTime,float MovementSpeed){
+        return std::max(0.0f,(1.0f-6.0f*x)*MovementSpeed* deltaTime);
+    }
+
+    float stopFlyingSpeedFunction(float x,GLfloat deltaTime,float MovementSpeed){
+        return std::max(0.0f,(1.0f-2.0f*x*x)*MovementSpeed* deltaTime);
     }
 
     void addVelocity(glm::vec3 velo){
@@ -124,13 +148,16 @@ public:
         //所以可以在updateVelocity中作出对速度的最后修改，然后在updateCamPosition最终计算出位置。
         
         //水平方向上，由于阻力，减少速度
-        OtherVelocity.z+=this->OtherVelocity.z<0?std::min(-this->OtherVelocity.z,frameVelocity):std::min(this->OtherVelocity.z,frameVelocity);
-        OtherVelocity.x+=this->OtherVelocity.x<0?std::min(-this->OtherVelocity.x,frameVelocity):std::min(this->OtherVelocity.x,frameVelocity);
+        OtherVelocity.z+=this->OtherVelocity.z<0?std::min(-this->OtherVelocity.z,0.2f*frameVelocity):std::max(-this->OtherVelocity.z,-0.2f*frameVelocity);
+        OtherVelocity.x+=this->OtherVelocity.x<0?std::min(-this->OtherVelocity.x,0.2f*frameVelocity):std::max(-this->OtherVelocity.x,-0.2f*frameVelocity);
 
-        //垂直方向上，加重力
-        OtherVelocity.y-=frameVelocity*0.08;
-        //限制最大下落速度
-        if(OtherVelocity.y<=-6.4*frameVelocity)OtherVelocity.y=-6.4*frameVelocity;
+        if(!isFlying){
+            //垂直方向上，加重力
+            OtherVelocity.y-=frameVelocity*0.08;
+            //限制最大下落速度
+            if(OtherVelocity.y<=-6.4*frameVelocity)OtherVelocity.y=-6.4*frameVelocity;
+        }
+    
         // std::cout<<OtherVelocity.y<<'\n';
         
     }
@@ -146,8 +173,8 @@ public:
         this->Position += sumVelocity;
         if(this->Position.y<=4.0f*0.5405f)
         this->Position.y=4.0*0.5405f;
-        //处理潜行
-        if(isSneaking)this->Position.y+=SNEAKINGY;
+        //处理非飞行下的潜行
+        if(isSneaking&&!isFlying)this->Position.y+=SNEAKINGY;
         //归零，重新计算玩家控制产生的速度
         this->Velocity=glm::vec3(0.0f);
     }
@@ -156,7 +183,21 @@ public:
     void ProcessKeyboard(Camera_Movement direction, GLfloat deltaTime,bool pressing,int gamemode)
     { 
 
+        GLfloat MovementSpeed=this->MovementSpeed;
+        GLfloat OriginalMovementSpeed=MovementSpeed;
         GLfloat frameVelocity = this->MovementSpeed * deltaTime;
+
+        if(isSneaking)
+        //非叠加
+            MovementSpeed=OriginalMovementSpeed*0.25;
+
+        if(isFlying)
+        //非叠加
+            MovementSpeed=OriginalMovementSpeed*1.5;
+
+        if(isSprinting)
+        //叠加
+            MovementSpeed*=2.0;
 
         // if (direction == FORWARD)
         //     this->Position += this->Front * velocity;
@@ -177,16 +218,68 @@ public:
         //     this->Position += upDelta*frameVelocity;
         // }
 
+        if (direction == TEST){
+            if(pressing){
+                if(pressTimeAcc['`']==0.0f){
+                    this->addVelocity(glm::vec3(-0.5f,0.0f,0.2f));
+                }
+                pressTimeAcc['`']+=deltaTime;
+                releaseTimeAcc['`']=0.0f;
+            }
+            else{
+                pressTimeAcc['`']=0.0f;
+                releaseTimeAcc['`']+=deltaTime;
+            }
+        }
+
+        if (direction == SPRINT){
+            if(pressing){
+                 if(!isSprinting&&!isSneaking){
+                    isSprinting=!isSprinting;
+                }
+                pressTimeAcc['=']+=deltaTime;
+                releaseTimeAcc['=']=0.0f;
+            }
+            else{
+                pressTimeAcc['=']=0.0f;
+                releaseTimeAcc['=']+=deltaTime;
+            }
+        }
+
         if (direction == JUMP){
             if(pressing){
+
                 if(pressTimeAcc['.']==0.0f){
-                    OtherVelocity.y=0.0f;
-                    this->addVelocity(glm::vec3(0.0f,0.07f,0.0f));
+
+                    if(releaseTimeAcc['.']>=0.005f&&releaseTimeAcc['.']<=0.3f){
+                        isFlying=!isFlying;
+                        //悬停
+                        Velocity.y=0.0f;
+                        OtherVelocity.y=0.0f;
+                    }
+                        
+                    if(!isFlying){
+                        OtherVelocity.y=0.0f;
+                        this->addVelocity(glm::vec3(0.0f,0.07f,0.0f));
+                    }
+
                 }
+
+                if(isFlying){
+                    glm::vec3 upDelta=glm::vec3(0.0f,1.0f,0.0f);
+                    this->Velocity += upDelta* flySpeedFunction(pressTimeAcc['.'],deltaTime,MovementSpeed);
+                }
+
                 pressTimeAcc['.']+=deltaTime;
                 releaseTimeAcc['.']=0.0f;
             }
             else{
+
+                if(isFlying){
+                    glm::vec3 upDelta=glm::vec3(0.0f,1.0f,0.0f);
+                    this->Velocity += upDelta* stopFlyingSpeedFunction(releaseTimeAcc['.'],deltaTime,MovementSpeed);
+                }
+
                 pressTimeAcc['.']=0.0f;
                 releaseTimeAcc['.']+=deltaTime;
             }
@@ -196,11 +289,23 @@ public:
         if (direction == SNEAK){
             if(pressing){
                 isSneaking=true;
+
+                 if(isFlying){
+                    glm::vec3 dnDelta=glm::vec3(0.0f,-1.0f,0.0f);
+                    this->Velocity += dnDelta* flySpeedFunction(pressTimeAcc[','],deltaTime,MovementSpeed);
+                }
+
                 pressTimeAcc[',']+=deltaTime;
                 releaseTimeAcc[',']=0.0f;
             }
             else{
                 isSneaking=false;
+
+                  if(isFlying){
+                    glm::vec3 dnDelta=glm::vec3(0.0f,-1.0f,0.0f);
+                    this->Velocity += dnDelta* stopFlyingSpeedFunction(releaseTimeAcc[','],deltaTime,MovementSpeed);
+                }
+
                 pressTimeAcc[',']=0.0f;
                 releaseTimeAcc[',']+=deltaTime;
             }
@@ -208,14 +313,26 @@ public:
             
 
         if (direction == FORWARD){
+
+            
             
             if(pressing){
-                this->Velocity += this->FrontWithoutY * walkSpeedFunction(pressTimeAcc['w'],deltaTime);
+                this->Velocity += this->FrontWithoutY * (isFlying? flySpeedFunction(pressTimeAcc['w'],deltaTime,MovementSpeed):walkSpeedFunction(pressTimeAcc['w'],deltaTime,MovementSpeed));
+                
+                if(!isSprinting&&releaseTimeAcc['w']>=0.005f&&releaseTimeAcc['w']<=0.3f&&!isSneaking){
+                    isSprinting=!isSprinting;
+                }
+
+                // std::cout<<isSprinting<<'\n';
+                
                 pressTimeAcc['w']+=deltaTime;
                 releaseTimeAcc['w']=0.0f;
             }
             else{
-                this->Velocity += this->FrontWithoutY * stopWalkingSpeedFunction(releaseTimeAcc['w'],deltaTime);
+                this->Velocity += this->FrontWithoutY * (isFlying? stopFlyingSpeedFunction(releaseTimeAcc['w'],deltaTime,MovementSpeed):stopWalkingSpeedFunction(releaseTimeAcc['w'],deltaTime,MovementSpeed));
+
+                isSprinting=false;
+
                 pressTimeAcc['w']=0.0f;
                 releaseTimeAcc['w']+=deltaTime;
             }
@@ -225,12 +342,12 @@ public:
 
 		if (direction == BACKWARD){
 			    if(pressing){
-                this->Velocity -= this->FrontWithoutY * walkSpeedFunction(pressTimeAcc['s'],deltaTime);
+                this->Velocity -= this->FrontWithoutY * (isFlying? flySpeedFunction(pressTimeAcc['s'],deltaTime,MovementSpeed):walkSpeedFunction(pressTimeAcc['s'],deltaTime,MovementSpeed));
                 pressTimeAcc['s']+=deltaTime;
                 releaseTimeAcc['s']=0.0f;
             }
             else{
-                this->Velocity -= this->FrontWithoutY * stopWalkingSpeedFunction(releaseTimeAcc['s'],deltaTime);
+                this->Velocity -= this->FrontWithoutY * (isFlying? stopFlyingSpeedFunction(releaseTimeAcc['s'],deltaTime,MovementSpeed):stopWalkingSpeedFunction(releaseTimeAcc['s'],deltaTime,MovementSpeed));
                 pressTimeAcc['s']=0.0f;
                 releaseTimeAcc['s']+=deltaTime;
             }
@@ -239,12 +356,12 @@ public:
 		if (direction == LEFT){
 
             if(pressing){
-                this->Velocity -= this->Right * walkSpeedFunction(pressTimeAcc['a'],deltaTime);
+                this->Velocity -= this->Right * (isFlying? flySpeedFunction(pressTimeAcc['a'],deltaTime,MovementSpeed):walkSpeedFunction(pressTimeAcc['a'],deltaTime,MovementSpeed));
                 pressTimeAcc['a']+=deltaTime;
                 releaseTimeAcc['a']=0.0f;
             }
             else{
-                this->Velocity -= this->Right * stopWalkingSpeedFunction(releaseTimeAcc['a'],deltaTime);
+                this->Velocity -= this->Right * (isFlying? stopFlyingSpeedFunction(releaseTimeAcc['a'],deltaTime,MovementSpeed):stopWalkingSpeedFunction(releaseTimeAcc['a'],deltaTime,MovementSpeed));
                 pressTimeAcc['a']=0.0f;
                 releaseTimeAcc['a']+=deltaTime;
             }
@@ -257,12 +374,12 @@ public:
 		if (direction == RIGHT){
 
             if(pressing){
-                this->Velocity += this->Right * walkSpeedFunction(pressTimeAcc['d'],deltaTime);
+                this->Velocity += this->Right * (isFlying? flySpeedFunction(pressTimeAcc['d'],deltaTime,MovementSpeed):walkSpeedFunction(pressTimeAcc['d'],deltaTime,MovementSpeed));
                 pressTimeAcc['d']+=deltaTime;
                 releaseTimeAcc['d']=0.0f;
             }
             else{
-                this->Velocity += this->Right * stopWalkingSpeedFunction(releaseTimeAcc['d'],deltaTime);
+                this->Velocity += this->Right * (isFlying? stopFlyingSpeedFunction(releaseTimeAcc['d'],deltaTime,MovementSpeed):stopWalkingSpeedFunction(releaseTimeAcc['d'],deltaTime,MovementSpeed));
                 pressTimeAcc['d']=0.0f;
                 releaseTimeAcc['d']+=deltaTime;
             }

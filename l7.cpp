@@ -220,7 +220,8 @@ void Do_Movement()
     camera.ProcessKeyboard(RIGHT, deltaTime,keys[GLFW_KEY_D],gameMode);
     camera.ProcessKeyboard(JUMP, deltaTime,keys[GLFW_KEY_SPACE],gameMode);  
     camera.ProcessKeyboard(SNEAK, deltaTime,keys[GLFW_KEY_LEFT_SHIFT],gameMode); 
-
+    camera.ProcessKeyboard(SPRINT, deltaTime,keys[GLFW_KEY_LEFT_CONTROL],gameMode); 
+    camera.ProcessKeyboard(TEST, deltaTime,keys[GLFW_KEY_0],gameMode); 
 }
 
 
