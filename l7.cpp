@@ -41,7 +41,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void Do_Movement();
 
 // Camera
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+Camera camera(glm::vec3(0.0f, 4.0f*blockLength, 0.0f));
 bool keys[1024];
 GLfloat lastX = 400, lastY = 300;
 bool firstMouse = true;
@@ -98,7 +98,7 @@ int main()
     // Draw in wireframe
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-    float stamp=0.0f;
+    // float stamp=0.0f;
 
     // Game loop
     while(!glfwWindowShouldClose(window))
@@ -108,12 +108,13 @@ int main()
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
-        stamp+=deltaTime;
-        std::cout<<stamp<<std::endl;
+        // stamp+=deltaTime;
+        // std::cout<<stamp<<std::endl;
 
         // Check and call events
         glfwPollEvents();
         Do_Movement();
+        camera.updateCamPosition(deltaTime);
 
         // Clear the colorbuffer(MC天空色)
         glClearColor(175/256.0, 221/256.0, 254/256.0, 1.0f);
@@ -213,46 +214,12 @@ int main()
 // Moves/alters the camera positions based on user input
 void Do_Movement()
 {
-    switch (gameMode)
-    {
-    case 0:
-        if(keys[GLFW_KEY_W])
-            camera.ProcessKeyboard(FORWARD_0, deltaTime);
-        if(keys[GLFW_KEY_S])
-            camera.ProcessKeyboard(BACKWARD_0, deltaTime);
-        if(keys[GLFW_KEY_A])
-            camera.ProcessKeyboard(LEFT_0, deltaTime);
-        if(keys[GLFW_KEY_D])
-            camera.ProcessKeyboard(RIGHT_0, deltaTime);
-
-        // if(keys[GLFW_KEY_SPACE])
-        //     camera.ProcessKeyboard(UP, deltaTime);
-
-        // if(keys[GLFW_KEY_LEFT_SHIFT])
-        //     camera.ProcessKeyboard(DOWN, deltaTime);
-        break;
-    case 1:
-         // Camera controls
-        if(keys[GLFW_KEY_W])
-            camera.ProcessKeyboard(FORWARD, deltaTime);
-        if(keys[GLFW_KEY_S])
-            camera.ProcessKeyboard(BACKWARD, deltaTime);
-        if(keys[GLFW_KEY_A])
-            camera.ProcessKeyboard(LEFT, deltaTime);
-        if(keys[GLFW_KEY_D])
-            camera.ProcessKeyboard(RIGHT, deltaTime);
-
-        if(keys[GLFW_KEY_SPACE])
-            camera.ProcessKeyboard(UP, deltaTime);
-
-        if(keys[GLFW_KEY_LEFT_SHIFT])
-            camera.ProcessKeyboard(DOWN, deltaTime);
-        break;
-    
-    default:
-        break;
-    }
-   
+    camera.ProcessKeyboard(FORWARD, deltaTime,keys[GLFW_KEY_W],gameMode);
+    camera.ProcessKeyboard(BACKWARD, deltaTime,keys[GLFW_KEY_S],gameMode);
+    camera.ProcessKeyboard(LEFT, deltaTime,keys[GLFW_KEY_A],gameMode);
+    camera.ProcessKeyboard(RIGHT, deltaTime,keys[GLFW_KEY_D],gameMode);
+    camera.ProcessKeyboard(JUMP, deltaTime,keys[GLFW_KEY_SPACE],gameMode);  
+    camera.ProcessKeyboard(SNEAK, deltaTime,keys[GLFW_KEY_LEFT_SHIFT],gameMode); 
 
 }
 
