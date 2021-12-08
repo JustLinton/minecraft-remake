@@ -30,6 +30,9 @@ public:
         this->loadModel(path);
     }
 
+
+    Model(){}
+
     // Draws the model, and thus all its meshes
     void Draw(Shader shader)
     {

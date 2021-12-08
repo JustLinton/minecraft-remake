@@ -98,8 +98,6 @@ int main()
     // Draw in wireframe
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-    float stamp=0.0f;
-
     // Game loop
     while(!glfwWindowShouldClose(window))
     {
@@ -107,9 +105,6 @@ int main()
         GLfloat currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
-
-        stamp+=deltaTime;
-        std::cout<<stamp<<std::endl;
 
         // Check and call events
         glfwPollEvents();
@@ -152,15 +147,17 @@ int main()
         // Draw the loaded model
         glm::mat4 model = unitMat;
 
-        //可以开始渲染方块了
-
         //草方块地板
-        // for(int i=-sceneSize/2;i<=sceneSize/2;i++)
-        //     for(int j=-sceneSize/2;j<=sceneSize/2;j++){
-        //         blockStore[BlockType.GRASS_BLOCK].render(shader,BlockPosition(i,0,j));
-        //     }
-
-        blockStore[BlockType.GRASS_BLOCK].render(shader,BlockPosition(0,0,0));
+        for(int i=-sceneSize/2;i<=sceneSize/2;i++)
+            for(int j=-sceneSize/2;j<=sceneSize/2;j++){
+                blockStore[BlockType.GRASS_BLOCK].render(shader,BlockPosition(i,0,j));
+                // model=unitMat;
+                // model = glm::translate(model, glm::vec3(0.0f-blockLength*j, -1.65f, 3.0f-blockLength*i)); 
+                // model = glm::scale(model, glm::vec3(0.27f, 0.27f, 0.27f));
+                // model = glm::rotate(model,glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+                // glUniformMatrix4fv(glGetUniformLocation(shader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+                // blockStore[BlockType.GRASS_BLOCK].getModel().Draw(shader);
+            }
 
         // model = unitMat;
         // model = glm::translate(model, glm::vec3(0.5f, -0.65f, 0.0f)); // Translate it down a bit so it's at the center of the scene
