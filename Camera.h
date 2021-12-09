@@ -10,6 +10,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "GameProperties.h"
+
 
 
 // Defines several possible options for camera movement. Used as abstraction to stay away from window-system specific input methods
@@ -89,6 +91,17 @@ public:
         return glm::lookAt(this->Position, this->Position + this->Front, this->Up);
     }
 
+    glm::vec3 getPosition(bool block){
+        glm::vec3 res = this->Position/blockLength;
+        //人站在y=0方块上，摄像机在该方块y基础上+4，所以我们减去4。
+        res.y-=3.5f;
+        if(block){
+            res.x=castToBlockInt(res.x);
+            res.y=castToBlockInt(res.y);
+            res.z=castToBlockInt(res.z);
+        }
+        return res;
+    }
   
     void initOperation(){
         isFlying=false;
@@ -112,12 +125,21 @@ public:
         initTiming(',');
         //'`' is lshift.
         initTiming('`');
-        //'=' is lcontrol.
+        //'=' is the time of sprint.
         initTiming('=');
         this->Velocity=glm::vec3(0.0f);
         this->OtherVelocity=glm::vec3(0.0f);
     }
 
+
+    float sprintZoomStartFunction(float x,GLfloat deltaTime){
+        if(x<=1.0f)return 45.2f+1.0f*x*x*0.5f;
+        return 45.7f;
+    }
+
+    float sprintZoomEndFunction(float x,GLfloat deltaTime){
+        return std::max(45.2f,45.2f+(1.0f-6.0f*x)*0.5f);
+    }
 
     float walkSpeedFunction(float x,GLfloat deltaTime,float MovementSpeed){
         if(x<=0.2f)return 5.0f*x*MovementSpeed* deltaTime;
@@ -162,6 +184,58 @@ public:
         
     }
 
+    void processHit(glm::vec3& sumVelocity,glm::vec3 blockPos){
+        float threashold=0.15f;
+        int hit=0;
+        glm::vec3 playerPos=getPosition(false);
+        glm::vec3 blockUb=blockPos+glm::vec3(0.5,0.5,0.5);
+        glm::vec3 blockLb=blockPos-glm::vec3(0.5,0.5,0.5);
+
+        if(
+            sumVelocity.z>0
+            &&((blockLb.z-playerPos.z)<=threashold)
+            &&((blockLb.z-playerPos.z)>0)
+        ){
+
+            hit=1;
+
+            if(playerPos.x<blockLb.x)
+                hit=0;
+
+            if(playerPos.x>blockUb.x)
+                hit=0;
+
+            if(playerPos.y<blockLb.y-1)
+                hit=0;
+
+            if(playerPos.y>blockUb.y)
+                hit=0;
+
+
+            // if(!(
+            //     //1格高
+            //     (playerPos.y+1<blockUb.y)
+            //     &&(playerPos.y>blockLb.y)
+            // ))
+            // hit=0;
+
+            // if(!(
+            //     //2格高
+            //     (playerPos.y+1<blockUb.y)
+            //     &&(playerPos.y+1>blockLb.y)
+            // ))
+            // hit=0;
+
+        }
+            
+
+        if(hit==1||hit==3)sumVelocity.z=0;
+        if(hit==2||hit==4)sumVelocity.x=0;
+        if(hit==5||hit==6)sumVelocity.y=0;
+        std::cout<<sumVelocity.z<<' '<<blockUb.y<<'\n';
+        // std::cout<<hit<<'\n';
+    }
+
     void updateCamPosition(GLfloat deltaTime){
         updateVelocity(deltaTime);
         glm::vec3 sumVelocity = glm::vec3(0.0f);
@@ -169,10 +243,16 @@ public:
         sumVelocity += this->Velocity;
         //加其他原因产生的速度，例如重力
         sumVelocity += this->OtherVelocity;
-        //合成速度，更新玩家位置
+
+        //进一步处理sumVelocity，处理非弹性碰撞
+        processHit(sumVelocity,glm::vec3(0,2,1));
+
+        //更新玩家位置
         this->Position += sumVelocity;
+        
         if(this->Position.y<=4.0f*0.5405f)
         this->Position.y=4.0*0.5405f;
+
         //处理非飞行下的潜行
         if(isSneaking&&!isFlying)this->Position.y+=SNEAKINGY;
         //归零，重新计算玩家控制产生的速度
@@ -195,9 +275,17 @@ public:
         //非叠加
             MovementSpeed=OriginalMovementSpeed*1.5;
 
+        if(isSprinting){//叠加
+            MovementSpeed*=2.3;
+            pressTimeAcc['=']+=deltaTime;
+        }
+
+        // std::cout<<pressTimeAcc['=']<<' '<<this->Zoom<<'\n';
+
         if(isSprinting)
-        //叠加
-            MovementSpeed*=2.0;
+            this->Zoom=sprintZoomStartFunction(pressTimeAcc['='],deltaTime);
+        else
+            this->Zoom=sprintZoomEndFunction(releaseTimeAcc['='],deltaTime);
 
         // if (direction == FORWARD)
         //     this->Position += this->Front * velocity;
@@ -235,15 +323,16 @@ public:
         if (direction == SPRINT){
             if(pressing){
                  if(!isSprinting&&!isSneaking){
-                    isSprinting=!isSprinting;
+                    // isSprinting=!isSprinting;
+                    isSprinting=true;
+                    // pressTimeAcc['=']+=deltaTime;
+                    releaseTimeAcc['=']=0.0f;
                 }
-                pressTimeAcc['=']+=deltaTime;
-                releaseTimeAcc['=']=0.0f;
             }
-            else{
-                pressTimeAcc['=']=0.0f;
-                releaseTimeAcc['=']+=deltaTime;
-            }
+            // else{
+            //     pressTimeAcc['=']=0.0f;
+            //     releaseTimeAcc['=']+=deltaTime;
+            // }
         }
 
         if (direction == JUMP){
@@ -320,7 +409,10 @@ public:
                 this->Velocity += this->FrontWithoutY * (isFlying? flySpeedFunction(pressTimeAcc['w'],deltaTime,MovementSpeed):walkSpeedFunction(pressTimeAcc['w'],deltaTime,MovementSpeed));
                 
                 if(!isSprinting&&releaseTimeAcc['w']>=0.005f&&releaseTimeAcc['w']<=0.3f&&!isSneaking){
-                    isSprinting=!isSprinting;
+                    // isSprinting=!isSprinting;
+                    isSprinting=true;
+                    // pressTimeAcc['=']+=deltaTime;
+                    releaseTimeAcc['=']=0.0f;
                 }
 
                 // std::cout<<isSprinting<<'\n';
@@ -335,6 +427,9 @@ public:
 
                 pressTimeAcc['w']=0.0f;
                 releaseTimeAcc['w']+=deltaTime;
+
+                pressTimeAcc['=']=0.0f;
+                releaseTimeAcc['=']+=deltaTime;
             }
 
         }
@@ -438,5 +533,11 @@ private:
         this->Right = glm::normalize(glm::cross(this->Front, this->WorldUp));  // Normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
         this->Up    = glm::normalize(glm::cross(this->Right, this->Front));
         this->FrontWithoutY = glm::normalize(glm::cross(glm::vec3(0,1,0),this->Right));
+    }
+
+    int castToBlockInt(float a){
+        int flr=int(a);
+        if(a>flr+0.5)return flr+1;
+        return flr;
     }
 };

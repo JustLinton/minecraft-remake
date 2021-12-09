@@ -27,11 +27,11 @@ class Block{
                   blockModel=Model(path);
             }
 
-            void render(Shader shader,BlockPosition pos){
+            void render(Shader shader,glm::vec3 pos){
                   //切记，一定要在view、projection、shader、lightposition等都定义完毕后，再来调用该函数！
                   glm::mat4 model=unitMat;
 
-                  model = glm::translate(model, glm::vec3(length*pos.x, length*pos.y, length*pos.z)); 
+                  model = glm::translate(model, glm::vec3(length*pos.x, length*(pos.y+1), length*pos.z)); 
 
                   model = glm::scale(model, glm::vec3(0.27f, 0.27f, 0.27f));
                   model = glm::rotate(model,glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));

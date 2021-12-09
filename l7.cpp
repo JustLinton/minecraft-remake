@@ -1,5 +1,6 @@
 // Std. Includes
 #include <string>
+#include <sstream>
 
 // GLEW
 #define GLEW_STATIC
@@ -24,17 +25,13 @@
 #include FT_FREETYPE_H
 
 //game imports
+#include "GameProperties.h"
 #include "Utils.h"
 #include "Blocks.h"
 #include "IndependentModels.h"
 #include "Text.h"
 #include "GUI.h"
-
-
-//game mode
-bool gameMode=0;
-int sel=0;
-const float blockLength=0.5405f;
+#include "DebugF3.h"
 
 // Properties
 GLuint screenWidth = 1920, screenHeight = 1080;
@@ -46,15 +43,13 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void Do_Movement();
 
 // Camera
-Camera camera(glm::vec3(0.0f, 3.0f*blockLength, 0.0f));
+Camera camera(spawnPos);
 bool keys[1024];
 GLfloat lastX = 400, lastY = 300;
 bool firstMouse = true;
 
 GLfloat deltaTime = 0.0f;
 GLfloat lastFrame = 0.0f;
-
-int sceneSize=30;
 
 
 // The MAIN function, from here we start our application and run our Game loop
@@ -165,12 +160,13 @@ int main()
 
         //可以开始渲染方块了
 
-        //草方块地板
-        for(int i=-sceneSize/2;i<=sceneSize/2;i++)
-            for(int j=-sceneSize/2;j<=sceneSize/2;j++){
-                blockStore[BlockType.GRASS_BLOCK].render(shader,BlockPosition(i,0,j));
-            }
+        // 草方块地板
+        // for(int i=-sceneSize/2;i<=sceneSize/2;i++)
+        //     for(int j=-sceneSize/2;j<=sceneSize/2;j++){
+        //         blockStore[BlockType.GRASS_BLOCK].render(shader,glm::vec3(i,0,j));
+        //     }
 
+        blockStore[BlockType.GRASS_BLOCK].render(shader,glm::vec3(0,1,1));
 
         model = unitMat;
         model = glm::translate(model, glm::vec3(0.5f, 1.05f, 0.0f)); // Translate it down a bit so it's at the center of the scene
@@ -210,16 +206,20 @@ int main()
         doorModel.Draw(shader);
 
 
-        // blockStore[BlockType.GRASS_BLOCK].render(shader,BlockPosition(0,0,0));
+     
 
+
+        //=================
+        //====gui and text======
+        //=================
         RenderText(textShader, "+", screenWidth/2.0f, screenHeight/2.0f+10.0f, 0.7f, glm::vec3(1.0f, 1.0f, 1.0f));
         RenderText(textShader, "Minecraft    0.2.1", 20.0f, screenHeight-35.0f, 0.45f, glm::vec3(1.0f, 1.0f, 1.0f));
+        
+        renderDebug(textShader,screenWidth,screenHeight,camera);
 
         // RenderGUI(guiShader, "img/itembarsel.png" ,screenWidth/2.0f-182.0f*1.75f, 80.0f, 24.0f,24.0f,3.5f, 0.25f);
-
         // RenderGUI(guiShader ,screenWidth/2.0f-182.0f*1.75f, 30.0f, 182.0f,22.0f,3.5f,0.75f);
         RenderGUI(guiShader,screenWidth,screenHeight,sel);
-    
 
         // Swap the buffers
         glfwSwapBuffers(window);
@@ -279,7 +279,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
     // camera.ProcessMouseScroll(yoffset);
-    if(yoffset>0){
+    if(yoffset<0){
         if(sel+1>8)sel=8;
         else sel+=1;
     } else{
