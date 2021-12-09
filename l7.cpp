@@ -25,6 +25,7 @@
 #include FT_FREETYPE_H
 
 //game imports
+#include "Map.h"
 #include "GameProperties.h"
 #include "Utils.h"
 #include "Blocks.h"
@@ -105,6 +106,10 @@ int main()
 
     // float stamp=0.0f;
 
+
+    //init map
+    mapManager.readMapFile();
+
     // Game loop
     while(!glfwWindowShouldClose(window))
     {
@@ -166,7 +171,21 @@ int main()
         //         blockStore[BlockType.GRASS_BLOCK].render(shader,glm::vec3(i,0,j));
         //     }
 
-        blockStore[BlockType.GRASS_BLOCK].render(shader,glm::vec3(0,1,1));
+        //if chunkSize=128,then the pos range is [-64,63).
+
+        for(int x=-chunkSize/2;x<=chunkSize/2-1;x++)
+            for(int y=-chunkSize/2;y<=chunkSize/2-1;y++)
+                for(int z=-chunkSize/2;z<=chunkSize/2-1;z++){
+                        int type=mapManager.chunkBlocks[getBlockRenderIndex(x)][getBlockRenderIndex(y)][getBlockRenderIndex(z)];
+                        if(type==0)continue;
+                        blockStore[type].render(shader,glm::vec3(x,y,z));
+                }
+
+
+        blockStore[BlockType.GRASS_BLOCK].render(shader,glm::vec3(0,2,1));
+        blockStore[BlockType.GRASS_BLOCK].render(shader,glm::vec3(0,0,-1));
+        blockStore[BlockType.GRASS_BLOCK].render(shader,glm::vec3(0,0,-3));
+        blockStore[BlockType.GRASS_BLOCK].render(shader,glm::vec3(0,0,-9));
 
         model = unitMat;
         model = glm::translate(model, glm::vec3(0.5f, 1.05f, 0.0f)); // Translate it down a bit so it's at the center of the scene
@@ -245,12 +264,16 @@ void Do_Movement()
 }
 
 
+void quitGame(GLFWwindow* window){
+    if(mapManager.saveMapFile())
+        glfwSetWindowShouldClose(window, GL_TRUE);
+}
 
 // Is called whenever a key is pressed/released via GLFW
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
 {
     if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, GL_TRUE);
+        quitGame(window);
 
     if(action == GLFW_PRESS)
         keys[key] = true;

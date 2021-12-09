@@ -25,7 +25,7 @@ class Model
 public:
     /*  Functions   */
     // Constructor, expects a filepath to a 3D model.
-    Model(GLchar* path)
+    Model(string path)
     {
         this->loadModel(path);
     }
@@ -197,7 +197,7 @@ GLint TextureFromFile(const char* path, string directory)
      //Generate texture ID and load texture data 
     string filename = string(path);
     filename = directory + '/' + filename;
-    cout<<filename<<endl;
+    // cout<<filename<<endl;
     GLuint textureID;
     glGenTextures(1, &textureID);
     int width,height;

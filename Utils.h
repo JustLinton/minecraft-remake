@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include "GameProperties.h"
 
 glm::mat4 unitMat(    // 单位矩阵
 	glm::vec4(1, 0, 0, 0),
@@ -11,6 +12,10 @@ glm::mat4 unitMat(    // 单位矩阵
 	glm::vec4(0, 0, 1, 0),
 	glm::vec4(0, 0, 0, 1)
 );
+
+int getBlockRenderIndex(int a){
+	return a+chunkSize/2;
+}
 
 // struct BlockPosition
 // {

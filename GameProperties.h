@@ -26,17 +26,20 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
-//game imports
-#include "Utils.h"
-#include "Blocks.h"
-#include "IndependentModels.h"
-#include "Text.h"
-#include "GUI.h"
 
 
 //game properties
 bool gameMode=0;
 int sel=0;
-const float blockLength=0.5405f;
+float blockScale=1.00f;
+// const float blockLength=blockScale;
+const float blockLength=0.5405f*blockScale;
+const float playerHeight=2.0f*blockLength;
+// const float playerHeight=3.66f*blockLength;
+// const float blockLength=0.5405f;
 int sceneSize=30;
-glm::vec3 spawnPos=glm::vec3(0.0f, 4.0f*blockLength, 0.0f);
+
+//if chunkSize=128,then the pos range is [-64,63).
+int chunkSize=64;
+// glm::vec3 spawnPos=glm::vec3(0.0f, 4.0f*blockLength, 0.0f);
+glm::vec3 spawnPos=glm::vec3(0.0f, 0.5f, 0.0f);

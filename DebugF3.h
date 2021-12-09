@@ -48,42 +48,42 @@ void renderDebug(Shader& textShader,float screenWidth,float screenHeight,Camera&
       //x
       debugLine1+="x: ";
       sst.clear();
-      sst<<camera.getPosition(true).x;
+      sst<<camera.getPlayerPosition(true).x;
       sst>>tmp;
       debugLine1+=tmp;
 
       //y
       debugLine1+="     y: ";
       sst.clear();
-      sst<<camera.getPosition(true).y;
+      sst<<camera.getPlayerPosition(true).y;
       sst>>tmp;
       debugLine1+=tmp;
 
       //z
       debugLine1+="    z: ";
       sst.clear();
-      sst<<camera.getPosition(true).z;
+      sst<<camera.getPlayerPosition(true).z;
       sst>>tmp;
       debugLine1+=tmp;
 
       //xb
       debugLine1+="     ( ACC x: ";
       sst.clear();
-      sst<<camera.getPosition(false).x;
+      sst<<camera.getPlayerPosition(false).x;
       sst>>tmp;
       debugLine1+=tmp;
 
       //yb
       debugLine1+="     y: ";
       sst.clear();
-      sst<<camera.getPosition(false).y;
+      sst<<camera.getPlayerPosition(false).y;
       sst>>tmp;
       debugLine1+=tmp;
 
       //zb
       debugLine1+="    z: ";
       sst.clear();
-      sst<<camera.getPosition(false).z;
+      sst<<camera.getPlayerPosition(false).z;
       sst>>tmp;
       debugLine1+=tmp;
       debugLine1+=" )";
