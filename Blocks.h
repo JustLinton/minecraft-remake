@@ -5,6 +5,7 @@
 #include "Utils.h"
 #include <map>
 #include <GL/glew.h>
+#include <string>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -12,10 +13,15 @@
 
 class _BlockType_{
       public:
-            _BlockType_(){}
+            std::map<int,string> names;
             const int AIR=0;
             const int GRASS_BLOCK=1;
+            _BlockType_(){
+                  names[AIR]=("Minecraft:AIR");
+                  names[GRASS_BLOCK]=("Minecraft:GRASS_BLOCK");
+            }
 }BlockType;
+
 
 class Block{
 
@@ -28,7 +34,7 @@ class Block{
                   blockModel=Model(path);
             }
 
-            void render(Shader shader,glm::vec3 pos){
+            void render(Shader shader,glm::vec3 pos,bool targeted){
 
                   if(id==0)return;
 
@@ -42,9 +48,11 @@ class Block{
                   // model = glm::scale(model, glm::vec3(blockScale,blockScale,blockScale));
                   model = glm::rotate(model,glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
+                  glUniform1i(glGetUniformLocation(shader.Program, "targeted"), targeted?1:0);
                   glUniformMatrix4fv(glGetUniformLocation(shader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
 
                   blockModel.Draw(shader);
+                  glUniform1i(glGetUniformLocation(shader.Program, "targeted"), 0);
             }
 
       private:

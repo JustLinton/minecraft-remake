@@ -33,6 +33,8 @@
 #include "Text.h"
 #include "GUI.h"
 #include "DebugF3.h"
+#include "Player.h"
+// #include "ModelUI.h"
 
 // Properties
 GLuint screenWidth = 1920, screenHeight = 1080;
@@ -89,6 +91,7 @@ int main()
     Shader shader("shaders/model_loading.vs", "shaders/model_loading.frag");
     Shader textShader("shaders/text.vs", "shaders/text.frag");
     Shader guiShader("shaders/gui.vs", "shaders/gui.frag");
+    Shader modelUiShader("shaders/ui_model.vs", "shaders/ui_model.frag");
 
     initTextRenderer(screenWidth,screenHeight,textShader);
     initGUIRenderer(screenWidth,screenHeight,guiShader);
@@ -131,33 +134,33 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         shader.Use();   // <-- Don't forget this one!
+
         // Transformation matrices
         glm::mat4 projection = glm::perspective(camera.Zoom, (float)screenWidth/(float)screenHeight, 0.1f, 100.0f);
         glm::mat4 view = camera.GetViewMatrix();
         glUniformMatrix4fv(glGetUniformLocation(shader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
         glUniformMatrix4fv(glGetUniformLocation(shader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
 
+        // glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
+        // GLint lightPosLoc    = glGetUniformLocation(shader.Program, "light.position");
+        // GLint viewPosLoc     = glGetUniformLocation(shader.Program, "viewPos");
+        // glUniform3f(lightPosLoc,    lightPos.x, lightPos.y, lightPos.z);
+        // glUniform3f(viewPosLoc,     camera.Position.x, camera.Position.y, camera.Position.z);
+        // // Set lights properties
+        // glm::vec3 lightColor(1.0f);
 
-        glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
-        GLint lightPosLoc    = glGetUniformLocation(shader.Program, "light.position");
-        GLint viewPosLoc     = glGetUniformLocation(shader.Program, "viewPos");
-        glUniform3f(lightPosLoc,    lightPos.x, lightPos.y, lightPos.z);
-        glUniform3f(viewPosLoc,     camera.Position.x, camera.Position.y, camera.Position.z);
-        // Set lights properties
-        glm::vec3 lightColor(1.0f);
+        // GLint lightAmbientLoc = glGetUniformLocation(shader.Program, "light.ambient");
+        // GLint lightDiffuseLoc = glGetUniformLocation(shader.Program, "light.diffuse");
+        // GLint lightSpecularLoc = glGetUniformLocation(shader.Program, "light.specular");
 
-        GLint lightAmbientLoc = glGetUniformLocation(shader.Program, "light.ambient");
-        GLint lightDiffuseLoc = glGetUniformLocation(shader.Program, "light.diffuse");
-        GLint lightSpecularLoc = glGetUniformLocation(shader.Program, "light.specular");
+        // glUniform3f(lightAmbientLoc, 0.2f, 0.2f, 0.2f);
+        // glUniform3f(lightDiffuseLoc, 0.5f, 0.5f, 0.5f);// 让我们把这个光调暗一点，这样会看起来更自然
+        // glUniform3f(lightSpecularLoc, 1.0f, 1.0f, 1.0f);
 
-        glUniform3f(lightAmbientLoc, 0.2f, 0.2f, 0.2f);
-        glUniform3f(lightDiffuseLoc, 0.5f, 0.5f, 0.5f);// 让我们把这个光调暗一点，这样会看起来更自然
-        glUniform3f(lightSpecularLoc, 1.0f, 1.0f, 1.0f);
-
-        glUniform3f(glGetUniformLocation(shader.Program, "material.ambient"),   1.0f, 0.5f, 0.31f);
-        glUniform3f(glGetUniformLocation(shader.Program, "material.diffuse"),   1.0f, 0.5f, 0.31f);
-        glUniform3f(glGetUniformLocation(shader.Program, "material.specular"),  0.5f, 0.5f, 0.5f); // Specular doesn't have full effect on this object's material
-        glUniform1f(glGetUniformLocation(shader.Program, "material.shininess"), 32.0f);
+        // glUniform3f(glGetUniformLocation(shader.Program, "material.ambient"),   1.0f, 0.5f, 0.31f);
+        // glUniform3f(glGetUniformLocation(shader.Program, "material.diffuse"),   1.0f, 0.5f, 0.31f);
+        // glUniform3f(glGetUniformLocation(shader.Program, "material.specular"),  0.5f, 0.5f, 0.5f); // Specular doesn't have full effect on this object's material
+        // glUniform1f(glGetUniformLocation(shader.Program, "material.shininess"), 32.0f);
 
 
         // Draw the loaded model
@@ -178,22 +181,18 @@ int main()
                 for(int z=-chunkSize/2;z<=chunkSize/2-1;z++){
                         int type=mapManager.chunkBlocks[getBlockRenderIndex(x)][getBlockRenderIndex(y)][getBlockRenderIndex(z)];
                         if(type==0)continue;
-                        blockStore[type].render(shader,glm::vec3(x,y,z));
+                        //targeting shading
+                        if(player.target.x==x&&player.target.y==y&&player.target.z==z&&player.isTargeting)
+                            blockStore[type].render(shader,glm::vec3(x,y,z),true);
+                        else
+                            blockStore[type].render(shader,glm::vec3(x,y,z),false);
                 }
 
 
-        blockStore[BlockType.GRASS_BLOCK].render(shader,glm::vec3(0,2,1));
-        blockStore[BlockType.GRASS_BLOCK].render(shader,glm::vec3(0,0,-1));
-        blockStore[BlockType.GRASS_BLOCK].render(shader,glm::vec3(0,0,-3));
-        blockStore[BlockType.GRASS_BLOCK].render(shader,glm::vec3(0,0,-9));
-
-        model = unitMat;
-        model = glm::translate(model, glm::vec3(0.5f, 1.05f, 0.0f)); // Translate it down a bit so it's at the center of the scene
-        model = glm::scale(model, glm::vec3(0.02f, 0.02f, 0.02f));	// It's a bit too big for our scene, so scale it down
-        model = glm::rotate(model,glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        model = glm::rotate(model,glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-        glUniformMatrix4fv(glGetUniformLocation(shader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        pickaxeModel.Draw(shader);
+        // blockStore[BlockType.GRASS_BLOCK].render(shader,glm::vec3(0,2,1),false);
+        // blockStore[BlockType.GRASS_BLOCK].render(shader,glm::vec3(0,0,-1));
+        // blockStore[BlockType.GRASS_BLOCK].render(shader,glm::vec3(0,0,-3));
+        // blockStore[BlockType.GRASS_BLOCK].render(shader,glm::vec3(0,0,-9));
 
 
         model = unitMat;
@@ -210,12 +209,12 @@ int main()
         glUniformMatrix4fv(glGetUniformLocation(shader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
         chestModel.Draw(shader);
 
-        model=unitMat;
-        model = glm::translate(model, glm::vec3(-4.0f, -0.4f, 3.0f)); // Translate it down a bit so it's at the center of the scene
-        model = glm::scale(model, glm::vec3(0.04f, 0.04f, 0.04f));	// It's a bit too big for our scene, so scale it down
-        model = glm::rotate(model,glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        glUniformMatrix4fv(glGetUniformLocation(shader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        horseModel.Draw(shader);
+        // model=unitMat;
+        // model = glm::translate(model, glm::vec3(-4.0f, -0.4f, 3.0f)); // Translate it down a bit so it's at the center of the scene
+        // model = glm::scale(model, glm::vec3(0.04f, 0.04f, 0.04f));	// It's a bit too big for our scene, so scale it down
+        // model = glm::rotate(model,glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        // glUniformMatrix4fv(glGetUniformLocation(shader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        // horseModel.Draw(shader);
 
         model=unitMat;
         model = glm::translate(model, glm::vec3(-0.5f, -0.43f, 7.0f)); // Translate it down a bit so it's at the center of the scene
@@ -224,14 +223,31 @@ int main()
         glUniformMatrix4fv(glGetUniformLocation(shader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
         doorModel.Draw(shader);
 
+        // model = unitMat;
+        // model = glm::translate(model, pos); // Translate it down a bit so it's at the center of the scene
+        // model = glm::scale(model, sca);	// It's a bit too big for our scene, so scale it down
+        // model = glm::rotate(model,glm::radians(rad), rotAxis);
+        // glUniformMatrix4fv(glGetUniformLocation(shader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        // pickaxeModel.Draw(shader);
 
-     
 
+
+
+ 
+        // model=unitMat;
+        // model = glm::translate(model, glm::vec3(blockLength*0, blockLength*(-0.5), blockLength*(-1))); 
+
+        // model = glm::scale(model, glm::vec3(0.15f*blockScale));
+        //     // model = glm::scale(model, glm::vec3(0.27f, 0.27f, 0.27f));
+        //     // model = glm::scale(model, glm::vec3(blockScale,blockScale,blockScale));
+        // model = glm::rotate(model,glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        // glUniformMatrix4fv(glGetUniformLocation(shader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        // blockStore[BlockType.GRASS_BLOCK].getModel().Draw(shader);
 
         //=================
         //====gui and text======
         //=================
-        RenderText(textShader, "+", screenWidth/2.0f, screenHeight/2.0f+10.0f, 0.7f, glm::vec3(1.0f, 1.0f, 1.0f));
+        RenderText(textShader, "+", screenWidth/2.0f, screenHeight/2.0f+90.0f, 0.7f, glm::vec3(1.0f, 1.0f, 1.0f));
         RenderText(textShader, "Minecraft    0.2.1", 20.0f, screenHeight-35.0f, 0.45f, glm::vec3(1.0f, 1.0f, 1.0f));
         
         renderDebug(textShader,screenWidth,screenHeight,camera);
@@ -239,6 +255,49 @@ int main()
         // RenderGUI(guiShader, "img/itembarsel.png" ,screenWidth/2.0f-182.0f*1.75f, 80.0f, 24.0f,24.0f,3.5f, 0.25f);
         // RenderGUI(guiShader ,screenWidth/2.0f-182.0f*1.75f, 30.0f, 182.0f,22.0f,3.5f,0.75f);
         RenderGUI(guiShader,screenWidth,screenHeight,sel);
+
+
+        //modelUI
+        modelUiShader.Use();   // <-- Don't forget this one!
+        // Transformation matrices
+
+        projection = glm::perspective(45.0f, (float)screenWidth/(float)screenHeight, 0.1f, 100.0f);
+        view = camera.GetViewMatrix();
+        glUniformMatrix4fv(glGetUniformLocation(modelUiShader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+        glUniformMatrix4fv(glGetUniformLocation(modelUiShader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
+        // model = unitMat;
+        // model = glm::translate(model,glm::vec3(0.3f, -0.1f, -0.5f)); // Translate it down a bit so it's at the center of the scene
+        // model = glm::scale(model,  glm::vec3(0.013f, 0.013f, 0.013f));	// It's a bit too big for our scene, so scale it down
+        // model = glm::rotate(model,glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        // model = glm::rotate(model,glm::radians(-80.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        // model = glm::rotate(model,glm::radians(10.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+        // glUniformMatrix4fv(glGetUniformLocation(modelUiShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        // pickaxeModel.Draw(modelUiShader);
+
+        //   for(int x=-chunkSize/2;x<=chunkSize/2-1;x++)
+        //     for(int y=-chunkSize/2;y<=chunkSize/2-1;y++)
+        //         for(int z=-chunkSize/2;z<=chunkSize/2-1;z++){
+        //                 int type=mapManager.chunkBlocks[getBlockRenderIndex(x)][getBlockRenderIndex(y)][getBlockRenderIndex(z)];
+        //                 if(type==0)continue;
+        //                 //targeting shading
+        //                 if(player.target.x==x&&player.target.y==y&&player.target.z==z&&player.isTargeting)
+        //                     blockStore[type].render(modelUiShader,glm::vec3(x,y,z),true);
+        //                 else
+        //                     blockStore[type].render(modelUiShader,glm::vec3(x,y,z),false);
+        //         }
+
+
+        model=unitMat;
+       model = glm::translate(model, glm::vec3(blockLength*0.5, blockLength*(-0.45), blockLength*(-1))); 
+
+        model = glm::scale(model, glm::vec3(0.065f));
+            // model = glm::scale(model, glm::vec3(0.27f, 0.27f, 0.27f));
+            // model = glm::scale(model, glm::vec3(blockScale,blockScale,blockScale));
+        model = glm::rotate(model,glm::radians(-20.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        model = glm::rotate(model,glm::radians(-10.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        model = glm::rotate(model,glm::radians(30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+        glUniformMatrix4fv(glGetUniformLocation(modelUiShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        blockStore[BlockType.GRASS_BLOCK].getModel(). Draw(modelUiShader);
 
         // Swap the buffers
         glfwSwapBuffers(window);

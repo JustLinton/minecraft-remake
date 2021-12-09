@@ -33,6 +33,7 @@
 #include "IndependentModels.h"
 #include "Text.h"
 #include "GUI.h"
+#include "Player.h"
 
 
 void renderDebug(Shader& textShader,float screenWidth,float screenHeight,Camera& camera){
@@ -95,8 +96,38 @@ void renderDebug(Shader& textShader,float screenWidth,float screenHeight,Camera&
       //line 2
       debugLine1="";
       tmp="";
-      
-   
 
-      RenderText(textShader, debugLine1, 20.0f, screenHeight-80.0f, 0.40f, glm::vec3(1.0f, 1.0f, 1.0f));
+
+      debugLine1+="target:    ";
+
+      if(player.isTargeting){
+            //x
+            sst.clear();
+            sst<<player.target.x;
+            sst>>tmp;
+            debugLine1+=tmp;
+
+            //x
+            debugLine1+=" , ";
+            sst.clear();
+            sst<<player.target.y;
+            sst>>tmp;
+            debugLine1+=tmp;
+            
+            //x
+            debugLine1+=" , ";
+            sst.clear();
+            sst<<player.target.z;
+            sst>>tmp;
+            debugLine1+=tmp;
+
+            debugLine1+="     ";
+            debugLine1+=BlockType.names[1];
+            
+      }else{
+             //x
+            debugLine1+=BlockType.names[0];
+      }
+
+      RenderText(textShader, debugLine1, 20.0f, screenHeight-86.0f, 0.40f, glm::vec3(1.0f, 1.0f, 1.0f));
 }

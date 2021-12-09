@@ -28,11 +28,18 @@ class Player
       // Camera options
       GLfloat MovementSpeed;
 
+      glm::vec3 target;
+      bool isTargeting;
+      bool isOnTheGround;
+
       Player(){
             this->rawPosition = spawnPos;
             this->Yaw = -90.0f;
             this->Pitch = 0.0f;
-            this->MovementSpeed=3.0f*blockScale;
+            this->MovementSpeed=2.7f*blockScale;
+            target=glm::vec3(0.0f);
+            isTargeting=false;
+            isOnTheGround=false;
       }
 };
 

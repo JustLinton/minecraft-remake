@@ -192,7 +192,7 @@ public:
     }
 
     void processHit(glm::vec3& sumVelocity,glm::vec3 blockPos){
-        float threashold=0.05f;
+        float threashold=0.3f;
         
         // float antiTransThreashold=0.3f;
         // float antiTransOffset=0.15f;
@@ -379,6 +379,46 @@ public:
        
     }
 
+    void processTargeting(){
+        glm::vec3 targetingLine=glm::normalize(this->Front);
+        glm::vec3 targetingLineN=glm::normalize(this->Front);
+        // glm::vec3 playerPos=getPlayerPosition(false)+glm::vec3(0.0f,playerHeight,0.0f);
+        glm::vec3 camPos=this->Position;
+
+        float step=0.01f;
+
+
+        for(int dist=0;dist<=targetingDist*10;dist++){
+
+            targetingLine=targetingLineN;
+            targetingLine.x=dist*targetingLine.x*step;
+            targetingLine.y=dist*targetingLine.y*step;
+            targetingLine.z=dist*targetingLine.z*step;
+            targetingLine+=camPos;
+            targetingLine/=glm::vec3(blockLength);
+
+            int tx=std::round(targetingLine.x);
+            int ty=std::round(targetingLine.y);
+            int tz=std::round(targetingLine.z);
+
+            // std::cout<<dist<<" : "<<(targetingLine.x)<<' '<<(targetingLine.y)<<' '<<(targetingLine.z)<<tx<<' '<<ty<<' '<<tz<<'\n';
+       
+            if(tx>=chunkSize/2||tx<-chunkSize/2||ty>=chunkSize/2||ty<-chunkSize/2||tz>=chunkSize/2||tz<-chunkSize/2)
+                continue;
+
+            // std::cout<<dist<<" : "<<tx<<' '<<ty<<' '<<tz<<endl;
+            if(mapManager.chunkBlocks[getBlockRenderIndex(tx)][getBlockRenderIndex(ty)][getBlockRenderIndex(tz)]!=0){
+                player.target=glm::vec3(tx,ty,tz);
+                player.isTargeting=true;
+                break;
+            }else{
+                player.isTargeting=false;
+            }
+                
+        }
+        
+    }
+
     void updateCamPosition(GLfloat deltaTime){
         updateVelocity(deltaTime);
         glm::vec3 sumVelocity = glm::vec3(0.0f);
@@ -400,37 +440,37 @@ public:
                         processHit(sumVelocity,glm::vec3(x,y,z));
                 }
 
-        processHit(sumVelocity,glm::vec3(0,2,1));
+        // processHit(sumVelocity,glm::vec3(0,2,1));
 
         //更新玩家位置
         player.rawPosition += sumVelocity;
         
 
 
+        bool onTheGround=false;
+        //处理脚下有方块的情况
         for(int y=playerPosition.y-2;y<=playerPosition.y+2;y++)
-            {
+        {
                 if(y>=chunkSize/2||y<-chunkSize/2)continue;
                 int type=mapManager.chunkBlocks[getBlockRenderIndex(playerPosition.x)][getBlockRenderIndex(y)][getBlockRenderIndex(playerPosition.z)];
                 if(type==0)continue;
                 if(player.rawPosition .y/blockLength<=y+0.5){
                     player.rawPosition.y=(y+0.5)*blockLength;
-                       
+                    player.isOnTheGround=true;
+                    onTheGround=true;
+                       //player.rawPosition .y/blockLength是玩家的实际posotion
+                       //(y+0.5)*blockLength是把rawPosition换算成实际Position
                 }
-                 std::cout<<player.rawPosition.y<<' '<<y+0.5<<endl;
-            }
+                //  std::cout<<player.rawPosition.y<<' '<<y+0.5<<endl;
+        }       
+        //防止左脚踩右脚原地升天
+        if(!onTheGround)player.isOnTheGround=false;
+        //碰到地停止飞行
+        if(onTheGround)player.isFlying=false;
 
-        // if(mapManager.chunkBlocks[playerPosition.x][playerPosition.y][playerPosition.z]!=0){
-        //     if(player.rawPosition.y<=playerHeight+playerPosition.y+0.5){
-        //                 player.rawPosition.y=playerHeight+playerPosition.y+0.5;
-        //     }
-        // }
-       
-
-        // if(player.rawPosition.y<=playerHeight)
-        // player.rawPosition.y=playerHeight;
-
-        if(player.rawPosition.y<=0.5*blockLength)
-        player.rawPosition.y=0.5*blockLength;
+        //不掉出世界
+        // if(player.rawPosition.y<=0.5*blockLength)
+        // player.rawPosition.y=0.5*blockLength;
 
         this->Position = player.rawPosition;
         this->Position.y+=playerHeight;
@@ -439,6 +479,8 @@ public:
         if(player.isSneaking&&!player.isFlying)this->Position.y+=SNEAKINGY;
         //归零，重新计算玩家控制产生的速度
         player.Velocity=glm::vec3(0.0f);
+
+        processTargeting();
     }
 
     // Processes input received from any keyboard-like input system. Accepts input parameter in the form of camera defined ENUM (to abstract it from windowing systems)
@@ -530,9 +572,9 @@ public:
                         player.OtherVelocity.y=0.0f;
                     }
                         
-                    if(!player.isFlying){
+                    if(!player.isFlying&&player.isOnTheGround){
                         player.OtherVelocity.y=0.0f;
-                        this->addVelocity(glm::vec3(0.0f,0.09f,0.0f));
+                        this->addVelocity(glm::vec3(0.0f,0.07f,0.0f));
                     }
 
                 }
