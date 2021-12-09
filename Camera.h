@@ -25,6 +25,8 @@ enum Camera_Movement {
     JUMP,
     SNEAK,
     SPRINT,
+    ATTACK,
+    USE,
     TEST
 };
 
@@ -530,11 +532,30 @@ public:
         //     this->Position += upDelta*frameVelocity;
         // }
 
+        if(direction==ATTACK){
+            if(pressing){
+                //  std::cout<<"attack\n";
+                if(player.isTargeting)
+                    mapManager.placeBlock(player.target,0);
+            }
+           
+        }
+
+        if(direction==USE){
+            
+            if(pressing){
+                if(player.isTargeting)
+                    mapManager.placeBlock(player.target+glm::vec3(0.0f,1.0f,0.0f),1);
+            }
+            
+        }
+
         if (direction == TEST){
             if(pressing){
                 if(pressTimeAcc['`']==0.0f){
                     // this->addVelocity(glm::vec3(-0.5f,0.0f,0.2f));
                     mapManager.placeBlock(getPlayerPosition(true),1);
+                    //   if(player.isTargeting)mapManager.placeBlock(player.target+glm::vec3(0.0f,1.0f,0.0f),1);
                 }
                 pressTimeAcc['`']+=deltaTime;
                 releaseTimeAcc['`']=0.0f;
@@ -708,6 +729,8 @@ public:
             // this->Position += this->Right * velocity;
             // this->Position.y=lastY;
         }           
+
+        
 
     }
 

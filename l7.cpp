@@ -43,6 +43,7 @@ GLuint screenWidth = 1920, screenHeight = 1080;
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 void Do_Movement();
 
 // Camera
@@ -72,6 +73,7 @@ int main()
     glfwSetKeyCallback(window, key_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
 
     // Options
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -265,14 +267,14 @@ int main()
         view = camera.GetViewMatrix();
         glUniformMatrix4fv(glGetUniformLocation(modelUiShader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
         glUniformMatrix4fv(glGetUniformLocation(modelUiShader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
-        // model = unitMat;
-        // model = glm::translate(model,glm::vec3(0.3f, -0.1f, -0.5f)); // Translate it down a bit so it's at the center of the scene
-        // model = glm::scale(model,  glm::vec3(0.013f, 0.013f, 0.013f));	// It's a bit too big for our scene, so scale it down
-        // model = glm::rotate(model,glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        // model = glm::rotate(model,glm::radians(-80.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        // model = glm::rotate(model,glm::radians(10.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-        // glUniformMatrix4fv(glGetUniformLocation(modelUiShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        // pickaxeModel.Draw(modelUiShader);
+        model = unitMat;
+        model = glm::translate(model,glm::vec3(0.3f, -0.1f, -0.5f)); // Translate it down a bit so it's at the center of the scene
+        model = glm::scale(model,  glm::vec3(0.013f, 0.013f, 0.013f));	// It's a bit too big for our scene, so scale it down
+        model = glm::rotate(model,glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        model = glm::rotate(model,glm::radians(-80.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        model = glm::rotate(model,glm::radians(10.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+        glUniformMatrix4fv(glGetUniformLocation(modelUiShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        if(sel==1)pickaxeModel.Draw(modelUiShader);
 
         //   for(int x=-chunkSize/2;x<=chunkSize/2-1;x++)
         //     for(int y=-chunkSize/2;y<=chunkSize/2-1;y++)
@@ -288,7 +290,7 @@ int main()
 
 
         model=unitMat;
-       model = glm::translate(model, glm::vec3(blockLength*0.5, blockLength*(-0.45), blockLength*(-1))); 
+        model = glm::translate(model, glm::vec3(blockLength*0.5, blockLength*(-0.45), blockLength*(-1))); 
 
         model = glm::scale(model, glm::vec3(0.065f));
             // model = glm::scale(model, glm::vec3(0.27f, 0.27f, 0.27f));
@@ -297,7 +299,7 @@ int main()
         model = glm::rotate(model,glm::radians(-10.0f), glm::vec3(0.0f, 0.0f, 1.0f));
         model = glm::rotate(model,glm::radians(30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
         glUniformMatrix4fv(glGetUniformLocation(modelUiShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        blockStore[BlockType.GRASS_BLOCK].getModel(). Draw(modelUiShader);
+        if(sel==2)blockStore[BlockType.GRASS_BLOCK].getModel(). Draw(modelUiShader);
 
         // Swap the buffers
         glfwSwapBuffers(window);
@@ -338,6 +340,23 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         keys[key] = true;
     else if(action == GLFW_RELEASE)
         keys[key] = false;	
+}
+
+
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+	if (action == GLFW_PRESS) switch(button)
+			{
+			case GLFW_MOUSE_BUTTON_LEFT:
+				 camera.ProcessKeyboard(ATTACK, deltaTime,true,gameMode); 
+				break;
+			case GLFW_MOUSE_BUTTON_RIGHT:
+                camera.ProcessKeyboard(USE, deltaTime,true,gameMode); 
+				break;
+			default:
+				return;
+			}
+	return;
 }
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
