@@ -32,7 +32,7 @@
 #include "Blocks.h"
 #include "IndependentModels.h"
 #include "Text.h"
-#include "GUI.h"
+#include "HandSlotGUI.h"
 #include "Player.h"
 
 
@@ -49,42 +49,42 @@ void renderDebug(Shader& textShader,float screenWidth,float screenHeight,Camera&
       //x
       debugLine1+="x: ";
       sst.clear();
-      sst<<camera.getPlayerPosition(true).x;
+      sst<<player.getBlockLocation().x;
       sst>>tmp;
       debugLine1+=tmp;
 
       //y
       debugLine1+="     y: ";
       sst.clear();
-      sst<<camera.getPlayerPosition(true).y;
+      sst<<player.getBlockLocation().y;
       sst>>tmp;
       debugLine1+=tmp;
 
       //z
       debugLine1+="    z: ";
       sst.clear();
-      sst<<camera.getPlayerPosition(true).z;
+      sst<<player.getBlockLocation().z;
       sst>>tmp;
       debugLine1+=tmp;
 
       //xb
       debugLine1+="     ( ACC x: ";
       sst.clear();
-      sst<<camera.getPlayerPosition(false).x;
+      sst<<player.getLocation().x;
       sst>>tmp;
       debugLine1+=tmp;
 
       //yb
       debugLine1+="     y: ";
       sst.clear();
-      sst<<camera.getPlayerPosition(false).y;
+      sst<<player.getLocation().y;
       sst>>tmp;
       debugLine1+=tmp;
 
       //zb
       debugLine1+="    z: ";
       sst.clear();
-      sst<<camera.getPlayerPosition(false).z;
+      sst<<player.getLocation().z;
       sst>>tmp;
       debugLine1+=tmp;
       debugLine1+=" )";
@@ -100,24 +100,27 @@ void renderDebug(Shader& textShader,float screenWidth,float screenHeight,Camera&
 
       debugLine1+="target:    ";
 
-      if(player.isTargeting){
+      BlockLocation target=player.getTargetBlockLocation();
+      bool isTargeting=player.getIsTargeting();
+
+      if(isTargeting){
             //x
             sst.clear();
-            sst<<player.target.x;
+            sst<<target.x;
             sst>>tmp;
             debugLine1+=tmp;
 
             //x
             debugLine1+=" , ";
             sst.clear();
-            sst<<player.target.y;
+            sst<<target.y;
             sst>>tmp;
             debugLine1+=tmp;
             
             //x
             debugLine1+=" , ";
             sst.clear();
-            sst<<player.target.z;
+            sst<<target.z;
             sst>>tmp;
             debugLine1+=tmp;
 

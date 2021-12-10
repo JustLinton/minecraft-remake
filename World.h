@@ -11,13 +11,12 @@
 using namespace std;
 
 
-class MapManager{
+class World{
       public:
 
             vector<vector<vector <int>> > chunkBlocks;                       
                    
-
-            MapManager(){
+            World(){
                   mapIfs=ifstream("maps/chunk1");
 
                   if (!mapIfs.is_open())
@@ -52,7 +51,7 @@ class MapManager{
                   // cout<<x<<y<<z<<type<<endl;
             }
 
-            bool placeBlock(glm::vec3 pos,int type){
+            bool setBlock(glm::vec3 pos,int type){
                   if(pos.x>=chunkSize/2||pos.x<-chunkSize/2|pos.y>=chunkSize/2||pos.y<-chunkSize/2||pos.z>=chunkSize/2||pos.z<-chunkSize/2)
                         return false;
                   chunkBlocks[getBlockRenderIndex(pos.x)][getBlockRenderIndex(pos.y)][getBlockRenderIndex(pos.z)]=type;
@@ -93,7 +92,7 @@ class MapManager{
 
             }
 
-            ~MapManager(){
+            ~World(){
                   mapIfs.close();
                   mapOfs.close();
             }
@@ -109,4 +108,4 @@ class MapManager{
            
 };
 
-MapManager mapManager;
+World world;

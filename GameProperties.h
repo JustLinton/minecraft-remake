@@ -30,7 +30,6 @@
 
 //game properties
 bool gameMode=0;
-int sel=0;
 float blockScale=1.00f;
 // const float blockLength=blockScale;
 const float blockLength=0.5405f*blockScale;

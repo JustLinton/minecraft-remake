@@ -25,15 +25,17 @@
 #include FT_FREETYPE_H
 
 //game imports
-#include "Map.h"
+#include "World.h"
 #include "GameProperties.h"
 #include "Utils.h"
 #include "Blocks.h"
+#include "Items.h"
 #include "IndependentModels.h"
 #include "Text.h"
-#include "GUI.h"
+#include "HandSlotGUI.h"
 #include "DebugF3.h"
 #include "Player.h"
+#include "FirstPerson.h"
 // #include "ModelUI.h"
 
 // Properties
@@ -54,7 +56,6 @@ bool firstMouse = true;
 
 GLfloat deltaTime = 0.0f;
 GLfloat lastFrame = 0.0f;
-
 
 // The MAIN function, from here we start our application and run our Game loop
 int main()
@@ -96,15 +97,11 @@ int main()
     Shader modelUiShader("shaders/ui_model.vs", "shaders/ui_model.frag");
 
     initTextRenderer(screenWidth,screenHeight,textShader);
-    initGUIRenderer(screenWidth,screenHeight,guiShader);
+    handSlotGUI.initGUIRenderer(screenWidth,screenHeight,guiShader);
     initBlocks();
-
-    Model pickaxeModel("models/mc_diamondpickaxe/Diamond-Pickaxe.obj");
-    Model chestModel("models/mc_chest/chest.obj");
-    // Model grassBlockModel("models/mc_grassblock/Grass_Block.obj");
-    Model horseModel("models/mc_horse/source/horse.fbx");
-    Model torchModel("models/mc-torch/Torch.obj");
-    Model doorModel("models/mc_door/Wooden-Door.obj");
+    initIndependentModels();
+    FirstPerson firstPerson(modelUiShader,screenWidth,screenHeight);
+    player.setFirstPerson(&firstPerson);
 
     // Draw in wireframe
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -113,7 +110,7 @@ int main()
 
 
     //init map
-    mapManager.readMapFile();
+    world.readMapFile();
 
     // Game loop
     while(!glfwWindowShouldClose(window))
@@ -181,10 +178,10 @@ int main()
         for(int x=-chunkSize/2;x<=chunkSize/2-1;x++)
             for(int y=-chunkSize/2;y<=chunkSize/2-1;y++)
                 for(int z=-chunkSize/2;z<=chunkSize/2-1;z++){
-                        int type=mapManager.chunkBlocks[getBlockRenderIndex(x)][getBlockRenderIndex(y)][getBlockRenderIndex(z)];
+                        int type=world.chunkBlocks[getBlockRenderIndex(x)][getBlockRenderIndex(y)][getBlockRenderIndex(z)];
                         if(type==0)continue;
                         //targeting shading
-                        if(player.target.x==x&&player.target.y==y&&player.target.z==z&&player.isTargeting)
+                        if(player.getTargetBlockLocation().x==x&&player.getTargetBlockLocation().y==y&&player.getTargetBlockLocation().z==z&&player.getIsTargeting())
                             blockStore[type].render(shader,glm::vec3(x,y,z),true);
                         else
                             blockStore[type].render(shader,glm::vec3(x,y,z),false);
@@ -233,9 +230,6 @@ int main()
         // pickaxeModel.Draw(shader);
 
 
-
-
- 
         // model=unitMat;
         // model = glm::translate(model, glm::vec3(blockLength*0, blockLength*(-0.5), blockLength*(-1))); 
 
@@ -249,33 +243,35 @@ int main()
         //=================
         //====gui and text======
         //=================
-        RenderText(textShader, "+", screenWidth/2.0f, screenHeight/2.0f+90.0f, 0.7f, glm::vec3(1.0f, 1.0f, 1.0f));
+        RenderText(textShader, "+", screenWidth/2.0f, screenHeight/2.0f+0.0f, 0.7f, glm::vec3(1.0f, 1.0f, 1.0f));
         RenderText(textShader, "Minecraft    0.2.1", 20.0f, screenHeight-35.0f, 0.45f, glm::vec3(1.0f, 1.0f, 1.0f));
         
         renderDebug(textShader,screenWidth,screenHeight,camera);
 
         // RenderGUI(guiShader, "img/itembarsel.png" ,screenWidth/2.0f-182.0f*1.75f, 80.0f, 24.0f,24.0f,3.5f, 0.25f);
         // RenderGUI(guiShader ,screenWidth/2.0f-182.0f*1.75f, 30.0f, 182.0f,22.0f,3.5f,0.75f);
-        RenderGUI(guiShader,screenWidth,screenHeight,sel);
+        handSlotGUI.RenderGUI(guiShader,screenWidth,screenHeight);
+
+        player.renderFirstPerson();
+        
+
+        // modelUiShader.Use();
+        // projection = glm::perspective(45.0f, (float)screenWidth/(float)screenHeight, 0.1f, 100.0f);
+        // view = camera.GetViewMatrix();
+        // glUniformMatrix4fv(glGetUniformLocation(modelUiShader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+        // glUniformMatrix4fv(glGetUniformLocation(modelUiShader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
+        // model = unitMat;
+        // model = glm::translate(model,glm::vec3(0.3f, -0.1f, -0.5f)); // Translate it down a bit so it's at the center of the scene
+        // model = glm::scale(model,  glm::vec3(0.013f, 0.013f, 0.013f));	// It's a bit too big for our scene, so scale it down
+        // model = glm::rotate(model,glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        // model = glm::rotate(model,glm::radians(-80.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        // model = glm::rotate(model,glm::radians(10.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+        // glUniformMatrix4fv(glGetUniformLocation(modelUiShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+
+        // pickaxeModel.Draw(modelUiShader);
 
 
-        //modelUI
-        modelUiShader.Use();   // <-- Don't forget this one!
-        // Transformation matrices
-
-        projection = glm::perspective(45.0f, (float)screenWidth/(float)screenHeight, 0.1f, 100.0f);
-        view = camera.GetViewMatrix();
-        glUniformMatrix4fv(glGetUniformLocation(modelUiShader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-        glUniformMatrix4fv(glGetUniformLocation(modelUiShader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
-        model = unitMat;
-        model = glm::translate(model,glm::vec3(0.3f, -0.1f, -0.5f)); // Translate it down a bit so it's at the center of the scene
-        model = glm::scale(model,  glm::vec3(0.013f, 0.013f, 0.013f));	// It's a bit too big for our scene, so scale it down
-        model = glm::rotate(model,glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        model = glm::rotate(model,glm::radians(-80.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        model = glm::rotate(model,glm::radians(10.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-        glUniformMatrix4fv(glGetUniformLocation(modelUiShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        if(sel==1)pickaxeModel.Draw(modelUiShader);
-
+        //用于定位，正确绘制第一人称
         //   for(int x=-chunkSize/2;x<=chunkSize/2-1;x++)
         //     for(int y=-chunkSize/2;y<=chunkSize/2-1;y++)
         //         for(int z=-chunkSize/2;z<=chunkSize/2-1;z++){
@@ -289,17 +285,7 @@ int main()
         //         }
 
 
-        model=unitMat;
-        model = glm::translate(model, glm::vec3(blockLength*0.5, blockLength*(-0.45), blockLength*(-1))); 
-
-        model = glm::scale(model, glm::vec3(0.065f));
-            // model = glm::scale(model, glm::vec3(0.27f, 0.27f, 0.27f));
-            // model = glm::scale(model, glm::vec3(blockScale,blockScale,blockScale));
-        model = glm::rotate(model,glm::radians(-20.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        model = glm::rotate(model,glm::radians(-10.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        model = glm::rotate(model,glm::radians(30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-        glUniformMatrix4fv(glGetUniformLocation(modelUiShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        if(sel==2)blockStore[BlockType.GRASS_BLOCK].getModel(). Draw(modelUiShader);
+     
 
         // Swap the buffers
         glfwSwapBuffers(window);
@@ -311,22 +297,25 @@ int main()
 
 #pragma region "User input"
 
+
 // Moves/alters the camera positions based on user input
 void Do_Movement()
-{
-    camera.ProcessKeyboard(FORWARD, deltaTime,keys[GLFW_KEY_W],gameMode);
-    camera.ProcessKeyboard(BACKWARD, deltaTime,keys[GLFW_KEY_S],gameMode);
-    camera.ProcessKeyboard(LEFT, deltaTime,keys[GLFW_KEY_A],gameMode);
-    camera.ProcessKeyboard(RIGHT, deltaTime,keys[GLFW_KEY_D],gameMode);
-    camera.ProcessKeyboard(JUMP, deltaTime,keys[GLFW_KEY_SPACE],gameMode);  
-    camera.ProcessKeyboard(SNEAK, deltaTime,keys[GLFW_KEY_LEFT_SHIFT],gameMode); 
-    camera.ProcessKeyboard(SPRINT, deltaTime,keys[GLFW_KEY_LEFT_CONTROL],gameMode); 
-    camera.ProcessKeyboard(TEST, deltaTime,keys[GLFW_KEY_0],gameMode); 
+{   
+    bool isPressingKey=(keys[GLFW_KEY_W]||keys[GLFW_KEY_S]||keys[GLFW_KEY_A]||keys[GLFW_KEY_D]);
+
+    camera.ProcessKeyboard(FORWARD, deltaTime,keys[GLFW_KEY_W],gameMode,isPressingKey);
+    camera.ProcessKeyboard(BACKWARD, deltaTime,keys[GLFW_KEY_S],gameMode,isPressingKey);
+    camera.ProcessKeyboard(LEFT, deltaTime,keys[GLFW_KEY_A],gameMode,isPressingKey);
+    camera.ProcessKeyboard(RIGHT, deltaTime,keys[GLFW_KEY_D],gameMode,isPressingKey);
+    camera.ProcessKeyboard(JUMP, deltaTime,keys[GLFW_KEY_SPACE],gameMode,isPressingKey);  
+    camera.ProcessKeyboard(SNEAK, deltaTime,keys[GLFW_KEY_LEFT_SHIFT],gameMode,isPressingKey); 
+    camera.ProcessKeyboard(SPRINT, deltaTime,keys[GLFW_KEY_LEFT_CONTROL],gameMode,isPressingKey); 
+    camera.ProcessKeyboard(TEST, deltaTime,keys[GLFW_KEY_0],gameMode,isPressingKey); 
 }
 
 
 void quitGame(GLFWwindow* window){
-    if(mapManager.saveMapFile())
+    if(world.saveMapFile())
         glfwSetWindowShouldClose(window, GL_TRUE);
 }
 
@@ -344,14 +333,14 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
-{
+{   
 	if (action == GLFW_PRESS) switch(button)
 			{
 			case GLFW_MOUSE_BUTTON_LEFT:
-				 camera.ProcessKeyboard(ATTACK, deltaTime,true,gameMode); 
+				 camera.ProcessMouseClick(ATTACK, deltaTime,true,gameMode); 
 				break;
 			case GLFW_MOUSE_BUTTON_RIGHT:
-                camera.ProcessKeyboard(USE, deltaTime,true,gameMode); 
+                camera.ProcessMouseClick(USE, deltaTime,true,gameMode); 
 				break;
 			default:
 				return;
@@ -381,11 +370,11 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
     // camera.ProcessMouseScroll(yoffset);
     if(yoffset<0){
-        if(sel+1>8)sel=8;
-        else sel+=1;
+        if(player.getHandSlot()+1>8)player.setHandSlot(8);
+        else player.setHandSlot(player.getHandSlot()+1);
     } else{
-        if(sel-1<0)sel=0;
-        else sel-=1;
+        if(player.getHandSlot()-1<0)player.setHandSlot(0);
+        else player.setHandSlot(player.getHandSlot()-1);
     }
 }
 

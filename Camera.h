@@ -1,4 +1,5 @@
 #pragma once
+#include "Types.h"
 
 // Std. Includes
 #include <vector>
@@ -12,7 +13,7 @@
 
 #include "GameProperties.h"
 #include "Player.h"
-#include "Map.h"
+#include "World.h"
 
 
 // Defines several possible options for camera movement. Used as abstraction to stay away from window-system specific input methods
@@ -94,20 +95,6 @@ public:
         return glm::lookAt(this->Position, this->Position + this->Front, this->Up);
     }
 
-    glm::vec3 getPlayerPosition(bool block){
-        // glm::vec3 res = player.rawPosition/blockLength;
-        glm::vec3 res = player.rawPosition/blockLength;
-        // res.z/=0.5405f;
-        //人站在y=0方块上，摄像机在该方块y基础上+4，所以我们减去4。
-        // res.y-=playerHeight/blockLength;
-        // res.y+=0.5;
-        if(block){
-            res.x=castToBlockInt(res.x);
-            res.y=castToBlockInt(res.y);
-            res.z=castToBlockInt(res.z);
-        }
-        return res;
-    }
   
     void initOperation(){
         player.isFlying=false;
@@ -133,13 +120,17 @@ public:
         initTiming('`');
         //'=' is the time of sprint.
         initTiming('=');
-        player.Velocity=glm::vec3(0.0f);
+        player.ObjectiveVelocity=glm::vec3(0.0f);
         player.OtherVelocity=glm::vec3(0.0f);
 
-        player.Velocity=glm::vec3(0.0f);
+        player.ObjectiveVelocity=glm::vec3(0.0f);
         player.OtherVelocity=glm::vec3(0.0f);
     }
 
+
+    //0w 1s  2a  3d  4space 5shift
+    float curFlyX[6]={0.0f};
+    bool isPressingWSAD=false;
 
     float sprintZoomStartFunction(float x,GLfloat deltaTime){
         if(x<=1.0f)return 45.2f+1.0f*x*x*0.5f;
@@ -155,7 +146,8 @@ public:
         return MovementSpeed* deltaTime;
     }
 
-    float flySpeedFunction(float x,GLfloat deltaTime,float MovementSpeed){
+    float flySpeedFunction(float x,GLfloat deltaTime,float MovementSpeed,int key){
+        curFlyX[key]=x;
         if(x<=0.5f)return 4.0f*x*x*MovementSpeed* deltaTime;
         return MovementSpeed* deltaTime;
     }
@@ -164,13 +156,11 @@ public:
         return std::max(0.0f,(1.0f-6.0f*x)*MovementSpeed* deltaTime);
     }
 
-    float stopFlyingSpeedFunction(float x,GLfloat deltaTime,float MovementSpeed){
-        return std::max(0.0f,(1.0f-2.0f*x*x)*MovementSpeed* deltaTime);
+    float stopFlyingSpeedFunction(float x,GLfloat deltaTime,float MovementSpeed,int key){
+        return std::max(0.0f,flySpeedFunction(curFlyX[key],deltaTime,MovementSpeed,key) + ((isPressingWSAD?-20.0f:-1.5f)*x*x)*MovementSpeed* deltaTime);
     }
 
-    void addVelocity(glm::vec3 velo){
-        player.OtherVelocity+=velo;
-    }
+    
 
     void updateVelocity(GLfloat deltaTime){
         GLfloat frameVelocity = player.MovementSpeed * deltaTime;
@@ -193,6 +183,7 @@ public:
         
     }
 
+
     void processHit(glm::vec3& sumVelocity,glm::vec3 blockPos){
         float threashold=0.3f;
         
@@ -200,7 +191,7 @@ public:
         // float antiTransOffset=0.15f;
 
         int hit=0;
-        glm::vec3 playerPos=getPlayerPosition(false);
+        glm::vec3 playerPos=player.getLocation();
         glm::vec3 blockUb=blockPos+glm::vec3(0.5,0.5,0.5);
         glm::vec3 blockLb=blockPos-glm::vec3(0.5,0.5,0.5);
 
@@ -348,6 +339,15 @@ public:
             if(playerPos.z>blockUb.z)
                 hit=0;
 
+            if(hit==6){
+                // player.rawPosition.y=(blockLb.y-2)*blockLength;
+                Location playerLocation=player.getLocation();
+                playerLocation-=V3(0.0f,2.0f,0.0f);
+                player.setLocation(playerLocation);
+
+                sumVelocity.y=0;
+            }
+               
         }
 
   
@@ -363,7 +363,6 @@ public:
             // player.rawPosition.y=blockUb.y;
             //  std::cout<<blockUb.y<<'\n';
         }
-        if(hit==6)sumVelocity.y=0;
 
         if(hit==7){
             sumVelocity.z=sumVelocity.x=0;
@@ -389,8 +388,9 @@ public:
 
         float step=0.01f;
 
+        camPos-=glm::vec3(0.0f,playerHeight*0.24,0.0f);
 
-        for(int dist=0;dist<=targetingDist*10;dist++){
+        for(int dist=0;dist<=targetingDist*16;dist++){
 
             targetingLine=targetingLineN;
             targetingLine.x=dist*targetingLine.x*step;
@@ -399,9 +399,13 @@ public:
             targetingLine+=camPos;
             targetingLine/=glm::vec3(blockLength);
 
-            int tx=std::round(targetingLine.x);
-            int ty=std::round(targetingLine.y);
-            int tz=std::round(targetingLine.z);
+            // int tx=std::round(targetingLine.x);
+            // int ty=std::round(targetingLine.y);
+            // int tz=std::round(targetingLine.z);
+
+            int tx=player.castToBlockInt(targetingLine.x);
+            int ty=player.castToBlockInt(targetingLine.y);
+            int tz=player.castToBlockInt(targetingLine.z);
 
             // std::cout<<dist<<" : "<<(targetingLine.x)<<' '<<(targetingLine.y)<<' '<<(targetingLine.z)<<tx<<' '<<ty<<' '<<tz<<'\n';
        
@@ -409,7 +413,7 @@ public:
                 continue;
 
             // std::cout<<dist<<" : "<<tx<<' '<<ty<<' '<<tz<<endl;
-            if(mapManager.chunkBlocks[getBlockRenderIndex(tx)][getBlockRenderIndex(ty)][getBlockRenderIndex(tz)]!=0){
+            if(world.chunkBlocks[getBlockRenderIndex(tx)][getBlockRenderIndex(ty)][getBlockRenderIndex(tz)]!=0){
                 player.target=glm::vec3(tx,ty,tz);
                 player.isTargeting=true;
                 break;
@@ -425,19 +429,19 @@ public:
         updateVelocity(deltaTime);
         glm::vec3 sumVelocity = glm::vec3(0.0f);
         //加玩家控制产生的速度
-        sumVelocity += player.Velocity;
+        sumVelocity += player.ObjectiveVelocity;
         //加其他原因产生的速度，例如重力
         sumVelocity += player.OtherVelocity;
 
         //进一步处理sumVelocity，处理非弹性碰撞
 
-        glm::vec3 playerPosition=getPlayerPosition(true);
+        glm::vec3 playerPosition=player.getBlockLocation();
 
         for(int x=playerPosition.x-2;x<=playerPosition.x+2;x++)
             for(int y=playerPosition.y-2;y<=playerPosition.y+2;y++)
                 for(int z=playerPosition.z-2;z<=playerPosition.z+2;z++){
                         if(x>=chunkSize/2||x<-chunkSize/2||y>=chunkSize/2||y<-chunkSize/2||z>=chunkSize/2||z<-chunkSize/2)continue;
-                        int type=mapManager.chunkBlocks[getBlockRenderIndex(x)][getBlockRenderIndex(y)][getBlockRenderIndex(z)];
+                        int type=world.chunkBlocks[getBlockRenderIndex(x)][getBlockRenderIndex(y)][getBlockRenderIndex(z)];
                         if(type==0)continue;
                         processHit(sumVelocity,glm::vec3(x,y,z));
                 }
@@ -448,22 +452,31 @@ public:
         player.rawPosition += sumVelocity;
         
 
-
         bool onTheGround=false;
         //处理脚下有方块的情况
-        for(int y=playerPosition.y-2;y<=playerPosition.y+2;y++)
+        for(int y=playerPosition.y-2;y<=playerPosition.y;y++)
         {
                 if(y>=chunkSize/2||y<-chunkSize/2)continue;
-                int type=mapManager.chunkBlocks[getBlockRenderIndex(playerPosition.x)][getBlockRenderIndex(y)][getBlockRenderIndex(playerPosition.z)];
+                if(playerPosition.x>=chunkSize/2||playerPosition.x<-chunkSize/2||y>=chunkSize/2||y<-chunkSize/2||playerPosition.z>=chunkSize/2||playerPosition.z<-chunkSize/2)continue;
+                
+                int type=world.chunkBlocks[getBlockRenderIndex(playerPosition.x)][getBlockRenderIndex(y)][getBlockRenderIndex(playerPosition.z)];
                 if(type==0)continue;
-                if(player.rawPosition .y/blockLength<=y+0.5){
-                    player.rawPosition.y=(y+0.5)*blockLength;
-                    player.isOnTheGround=true;
+                // if(player.rawPosition .y/blockLength<=y+0.5){
+                //     player.rawPosition.y=(y+0.5)*blockLength;
+                //     player.isOnTheGround=true;
+                //     onTheGround=true;
+                //        //player.rawPosition .y/blockLength是玩家的实际posotion
+                //        //(y+0.5)*blockLength是把rawPosition换算成实际Position
+                // }
+
+                Location playerLoation=player.getLocation();
+                if(playerLoation.y<=y+0.5){
+                    playerLoation.y=y+0.5;
+                    player.setLocation(playerLoation);
+                        player.isOnTheGround=true;
                     onTheGround=true;
-                       //player.rawPosition .y/blockLength是玩家的实际posotion
-                       //(y+0.5)*blockLength是把rawPosition换算成实际Position
                 }
-                //  std::cout<<player.rawPosition.y<<' '<<y+0.5<<endl;
+                
         }       
         //防止左脚踩右脚原地升天
         if(!onTheGround)player.isOnTheGround=false;
@@ -480,18 +493,22 @@ public:
         //处理非飞行下的潜行
         if(player.isSneaking&&!player.isFlying)this->Position.y+=SNEAKINGY;
         //归零，重新计算玩家控制产生的速度
-        player.Velocity=glm::vec3(0.0f);
+        player.ObjectiveVelocity=glm::vec3(0.0f);
 
         processTargeting();
     }
 
     // Processes input received from any keyboard-like input system. Accepts input parameter in the form of camera defined ENUM (to abstract it from windowing systems)
-    void ProcessKeyboard(Camera_Movement direction, GLfloat deltaTime,bool pressing,int gamemode)
+    void ProcessKeyboard(Camera_Movement direction, GLfloat deltaTime,bool pressing,int gamemode,bool isPressingWSADKey)
     { 
 
         GLfloat MovementSpeed=player.MovementSpeed;
         GLfloat OriginalMovementSpeed=MovementSpeed;
         GLfloat frameVelocity = player.MovementSpeed * deltaTime;
+
+
+        isPressingWSAD=isPressingWSADKey;
+        // std::cout<<isPressingKey<<'\n';
 
         if(player.isSneaking)
         //非叠加
@@ -532,29 +549,12 @@ public:
         //     this->Position += upDelta*frameVelocity;
         // }
 
-        if(direction==ATTACK){
-            if(pressing){
-                //  std::cout<<"attack\n";
-                if(player.isTargeting)
-                    mapManager.placeBlock(player.target,0);
-            }
-           
-        }
-
-        if(direction==USE){
-            
-            if(pressing){
-                if(player.isTargeting)
-                    mapManager.placeBlock(player.target+glm::vec3(0.0f,1.0f,0.0f),1);
-            }
-            
-        }
 
         if (direction == TEST){
             if(pressing){
                 if(pressTimeAcc['`']==0.0f){
                     // this->addVelocity(glm::vec3(-0.5f,0.0f,0.2f));
-                    mapManager.placeBlock(getPlayerPosition(true),1);
+                    world.setBlock(player.getBlockLocation(),1);
                     //   if(player.isTargeting)mapManager.placeBlock(player.target+glm::vec3(0.0f,1.0f,0.0f),1);
                 }
                 pressTimeAcc['`']+=deltaTime;
@@ -589,20 +589,20 @@ public:
                     if(releaseTimeAcc['.']>=0.005f&&releaseTimeAcc['.']<=0.1f){
                         player.isFlying=!player.isFlying;
                         //悬停
-                        player.Velocity.y=0.0f;
+                        player.ObjectiveVelocity.y=0.0f;
                         player.OtherVelocity.y=0.0f;
                     }
                         
                     if(!player.isFlying&&player.isOnTheGround){
                         player.OtherVelocity.y=0.0f;
-                        this->addVelocity(glm::vec3(0.0f,0.07f,0.0f));
+                        player.giveVelocity(Velocity(0.0f,0.07f,0.0f));
                     }
 
                 }
 
                 if(player.isFlying){
                     glm::vec3 upDelta=glm::vec3(0.0f,1.0f,0.0f);
-                    player.Velocity += upDelta* flySpeedFunction(pressTimeAcc['.'],deltaTime,MovementSpeed);
+                    player.ObjectiveVelocity += upDelta* flySpeedFunction(pressTimeAcc['.'],deltaTime,MovementSpeed,4);
                 }
 
                 pressTimeAcc['.']+=deltaTime;
@@ -612,7 +612,7 @@ public:
 
                 if(player.isFlying){
                     glm::vec3 upDelta=glm::vec3(0.0f,1.0f,0.0f);
-                    player.Velocity += upDelta* stopFlyingSpeedFunction(releaseTimeAcc['.'],deltaTime,MovementSpeed);
+                    player.ObjectiveVelocity += upDelta* stopFlyingSpeedFunction(releaseTimeAcc['.'],deltaTime,MovementSpeed,4);
                 }
 
                 pressTimeAcc['.']=0.0f;
@@ -627,7 +627,7 @@ public:
 
                  if(player.isFlying){
                     glm::vec3 dnDelta=glm::vec3(0.0f,-1.0f,0.0f);
-                    player.Velocity += dnDelta* flySpeedFunction(pressTimeAcc[','],deltaTime,MovementSpeed);
+                    player.ObjectiveVelocity += dnDelta* flySpeedFunction(pressTimeAcc[','],deltaTime,MovementSpeed,5);
                 }
 
                 pressTimeAcc[',']+=deltaTime;
@@ -638,7 +638,7 @@ public:
 
                   if(player.isFlying){
                     glm::vec3 dnDelta=glm::vec3(0.0f,-1.0f,0.0f);
-                    player.Velocity += dnDelta* stopFlyingSpeedFunction(releaseTimeAcc[','],deltaTime,MovementSpeed);
+                    player.ObjectiveVelocity += dnDelta* stopFlyingSpeedFunction(releaseTimeAcc[','],deltaTime,MovementSpeed,5);
                 }
 
                 pressTimeAcc[',']=0.0f;
@@ -652,7 +652,7 @@ public:
             
             
             if(pressing){
-                player.Velocity += this->FrontWithoutY * (player.isFlying? flySpeedFunction(pressTimeAcc['w'],deltaTime,MovementSpeed):walkSpeedFunction(pressTimeAcc['w'],deltaTime,MovementSpeed));
+                player.ObjectiveVelocity += this->FrontWithoutY * (player.isFlying? flySpeedFunction(pressTimeAcc['w'],deltaTime,MovementSpeed,0):walkSpeedFunction(pressTimeAcc['w'],deltaTime,MovementSpeed));
                 
                 if(!player.isSprinting&&releaseTimeAcc['w']>=0.005f&&releaseTimeAcc['w']<=0.1f&&!player.isSneaking){
                     // isSprinting=!isSprinting;
@@ -667,7 +667,7 @@ public:
                 releaseTimeAcc['w']=0.0f;
             }
             else{
-                player.Velocity += this->FrontWithoutY * (player.isFlying? stopFlyingSpeedFunction(releaseTimeAcc['w'],deltaTime,MovementSpeed):stopWalkingSpeedFunction(releaseTimeAcc['w'],deltaTime,MovementSpeed));
+                player.ObjectiveVelocity += this->FrontWithoutY * (player.isFlying? stopFlyingSpeedFunction(releaseTimeAcc['w'],deltaTime,MovementSpeed,0):stopWalkingSpeedFunction(releaseTimeAcc['w'],deltaTime,MovementSpeed));
 
                 player.isSprinting=false;
 
@@ -683,12 +683,12 @@ public:
 
 		if (direction == BACKWARD){
 			    if(pressing){
-                player.Velocity -= this->FrontWithoutY * (player.isFlying? flySpeedFunction(pressTimeAcc['s'],deltaTime,MovementSpeed):walkSpeedFunction(pressTimeAcc['s'],deltaTime,MovementSpeed));
+                player.ObjectiveVelocity -= this->FrontWithoutY * (player.isFlying? flySpeedFunction(pressTimeAcc['s'],deltaTime,MovementSpeed,1):walkSpeedFunction(pressTimeAcc['s'],deltaTime,MovementSpeed));
                 pressTimeAcc['s']+=deltaTime;
                 releaseTimeAcc['s']=0.0f;
             }
             else{
-                player.Velocity -= this->FrontWithoutY * (player.isFlying? stopFlyingSpeedFunction(releaseTimeAcc['s'],deltaTime,MovementSpeed):stopWalkingSpeedFunction(releaseTimeAcc['s'],deltaTime,MovementSpeed));
+                player.ObjectiveVelocity -= this->FrontWithoutY * (player.isFlying? stopFlyingSpeedFunction(releaseTimeAcc['s'],deltaTime,MovementSpeed,1):stopWalkingSpeedFunction(releaseTimeAcc['s'],deltaTime,MovementSpeed));
                 pressTimeAcc['s']=0.0f;
                 releaseTimeAcc['s']+=deltaTime;
             }
@@ -697,12 +697,12 @@ public:
 		if (direction == LEFT){
 
             if(pressing){
-                player.Velocity -= this->Right * (player.isFlying? flySpeedFunction(pressTimeAcc['a'],deltaTime,MovementSpeed):walkSpeedFunction(pressTimeAcc['a'],deltaTime,MovementSpeed));
+                player.ObjectiveVelocity -= this->Right * (player.isFlying? flySpeedFunction(pressTimeAcc['a'],deltaTime,MovementSpeed,2):walkSpeedFunction(pressTimeAcc['a'],deltaTime,MovementSpeed));
                 pressTimeAcc['a']+=deltaTime;
                 releaseTimeAcc['a']=0.0f;
             }
             else{
-                player.Velocity -= this->Right * (player.isFlying? stopFlyingSpeedFunction(releaseTimeAcc['a'],deltaTime,MovementSpeed):stopWalkingSpeedFunction(releaseTimeAcc['a'],deltaTime,MovementSpeed));
+                player.ObjectiveVelocity -= this->Right * (player.isFlying? stopFlyingSpeedFunction(releaseTimeAcc['a'],deltaTime,MovementSpeed,2):stopWalkingSpeedFunction(releaseTimeAcc['a'],deltaTime,MovementSpeed));
                 pressTimeAcc['a']=0.0f;
                 releaseTimeAcc['a']+=deltaTime;
             }
@@ -715,12 +715,12 @@ public:
 		if (direction == RIGHT){
 
             if(pressing){
-                player.Velocity += this->Right * (player.isFlying? flySpeedFunction(pressTimeAcc['d'],deltaTime,MovementSpeed):walkSpeedFunction(pressTimeAcc['d'],deltaTime,MovementSpeed));
+                player.ObjectiveVelocity += this->Right * (player.isFlying? flySpeedFunction(pressTimeAcc['d'],deltaTime,MovementSpeed,3):walkSpeedFunction(pressTimeAcc['d'],deltaTime,MovementSpeed));
                 pressTimeAcc['d']+=deltaTime;
                 releaseTimeAcc['d']=0.0f;
             }
             else{
-                player.Velocity += this->Right * (player.isFlying? stopFlyingSpeedFunction(releaseTimeAcc['d'],deltaTime,MovementSpeed):stopWalkingSpeedFunction(releaseTimeAcc['d'],deltaTime,MovementSpeed));
+                player.ObjectiveVelocity += this->Right * (player.isFlying? stopFlyingSpeedFunction(releaseTimeAcc['d'],deltaTime,MovementSpeed,3):stopWalkingSpeedFunction(releaseTimeAcc['d'],deltaTime,MovementSpeed));
                 pressTimeAcc['d']=0.0f;
                 releaseTimeAcc['d']+=deltaTime;
             }
@@ -732,6 +732,21 @@ public:
 
         
 
+    }
+
+    void ProcessMouseClick(Camera_Movement direction, GLfloat deltaTime,bool pressing,int gamemode){
+        if(direction==ATTACK){
+            if(pressing){
+                //  std::cout<<"attack\n";
+                player.processClick(true);
+            }
+        }
+
+        if(direction==USE){
+            if(pressing){
+                player.processClick(false);
+            }
+        }
     }
 
     // Processes input received from a mouse input system. Expects the offset value in both the x and y direction.
@@ -783,9 +798,4 @@ private:
         this->FrontWithoutY = glm::normalize(glm::cross(glm::vec3(0,1,0),this->Right));
     }
 
-    int castToBlockInt(float a){
-        int flr=std::floor(a);
-        if(a>flr+0.5)return flr+1;
-        return flr;
-    }
 };
