@@ -14,7 +14,7 @@ using namespace std;
 class World{
       public:
 
-            vector<vector<vector <int>> > chunkBlocks;                       
+                     
                    
             World(){
                   mapIfs=ifstream("maps/chunk1");
@@ -58,6 +58,18 @@ class World{
                   return true;
             }
 
+            bool checkIfBlockLocValid(BlockLocation pos){
+                  if(pos.x>=chunkSize/2||pos.x<-chunkSize/2|pos.y>=chunkSize/2||pos.y<-chunkSize/2||pos.z>=chunkSize/2||pos.z<-chunkSize/2)
+                        return false;
+                  return true;
+            }
+
+             bool checkIfLocValid(Location pos){
+                  if(pos.x>=chunkSize/2||pos.x<-chunkSize/2|pos.y>=chunkSize/2||pos.y<-chunkSize/2||pos.z>=chunkSize/2||pos.z<-chunkSize/2)
+                        return false;
+                  return true;
+            }
+
             bool saveMapFile(){
 
                   mapOfs=ofstream("maps/chunk1");
@@ -92,6 +104,31 @@ class World{
 
             }
 
+            static const BlockLocation castToBlockLocation(Location loc){
+                  return BlockLocation(castToBlockInt(loc.x),castToBlockInt(loc.y),castToBlockInt(loc.z));
+            }
+
+            static const int castToBlockInt(float a){
+                  int flr=std::floor(a);
+                  if(a>flr+0.5)return flr+1;
+                  return flr;
+            }
+
+            int getBlockTypeAt(Location loca){
+                  BlockLocation loc=castToBlockLocation(loca);
+                  if(checkIfBlockLocValid(loc)){
+                        return chunkBlocks[getBlockRenderIndex(loc.x)][getBlockRenderIndex(loc.y)][getBlockRenderIndex(loc.z)];
+                  }
+                  return 0;
+            }
+
+            int getBlockTypeAt(BlockLocation loc){
+                  if(checkIfBlockLocValid(loc)){
+                        return chunkBlocks[getBlockRenderIndex(loc.x)][getBlockRenderIndex(loc.y)][getBlockRenderIndex(loc.z)];
+                  }
+                  return 0;
+            }
+
             ~World(){
                   mapIfs.close();
                   mapOfs.close();
@@ -101,10 +138,13 @@ class World{
             ifstream mapIfs;
             ofstream mapOfs;
 
+            vector<vector<vector <int>> > chunkBlocks;
+
             void printError(){
                   cout<<"map read err."<<endl;
             }
 
+            friend class Camera;
            
 };
 

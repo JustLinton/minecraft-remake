@@ -56,7 +56,7 @@ class FirstPerson{
             float screenHeight;
 
             void drawBlock(){
-                  model = glm::translate(model, glm::vec3(blockLength*0.5, blockLength*(-0.45), blockLength*(-1))); 
+                  model = glm::translate(model, glm::vec3(blockLength*0.5, blockLength*(-0.55), blockLength*(-1))); 
                   model = glm::scale(model, glm::vec3(0.065f));
                   model = glm::rotate(model,glm::radians(-10.0f), glm::vec3(0.0f, 0.0f, 1.0f));
                   model = glm::rotate(model,glm::radians(-20.0f), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -66,7 +66,7 @@ class FirstPerson{
             }
 
             void drawPickaxe(){
-                  model = glm::translate(model,glm::vec3(0.3f, -0.1f, -0.5f)); // Translate it down a bit so it's at the center of the scene
+                  model = glm::translate(model,glm::vec3(0.3f, -0.17f, -0.5f)); // Translate it down a bit so it's at the center of the scene
                   model = glm::scale(model,  glm::vec3(0.013f, 0.013f, 0.013f));	// It's a bit too big for our scene, so scale it down
                   model = glm::rotate(model,glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
                   model = glm::rotate(model,glm::radians(-80.0f), glm::vec3(0.0f, 1.0f, 0.0f));

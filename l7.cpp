@@ -60,14 +60,19 @@ GLfloat lastFrame = 0.0f;
 // The MAIN function, from here we start our application and run our Game loop
 int main()
 {
+    // isFullScreen=false;
+
     // Init GLFW
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+    
 
-    GLFWwindow* window = glfwCreateWindow(screenWidth, screenHeight, "Minecraft By Linton", nullptr, nullptr); // Windowed
+    GLFWmonitor* pmonitor = isFullScreen?glfwGetPrimaryMonitor():nullptr;
+
+    GLFWwindow* window = glfwCreateWindow(screenWidth, screenHeight, "Minecraft By Linton", pmonitor, nullptr); // Windowed
     glfwMakeContextCurrent(window);
 
     // Set the required callback functions
@@ -178,7 +183,8 @@ int main()
         for(int x=-chunkSize/2;x<=chunkSize/2-1;x++)
             for(int y=-chunkSize/2;y<=chunkSize/2-1;y++)
                 for(int z=-chunkSize/2;z<=chunkSize/2-1;z++){
-                        int type=world.chunkBlocks[getBlockRenderIndex(x)][getBlockRenderIndex(y)][getBlockRenderIndex(z)];
+                        // int type=world.chunkBlocks[getBlockRenderIndex(x)][getBlockRenderIndex(y)][getBlockRenderIndex(z)];
+                        int type=world.getBlockTypeAt(BlockLocation(x,y,z));
                         if(type==0)continue;
                         //targeting shading
                         if(player.getTargetBlockLocation().x==x&&player.getTargetBlockLocation().y==y&&player.getTargetBlockLocation().z==z&&player.getIsTargeting())
@@ -243,7 +249,7 @@ int main()
         //=================
         //====gui and text======
         //=================
-        RenderText(textShader, "+", screenWidth/2.0f, screenHeight/2.0f+0.0f, 0.7f, glm::vec3(1.0f, 1.0f, 1.0f));
+        RenderText(textShader, "+", screenWidth/2.0f-10.0f, screenHeight/2.0f+0.0f, 0.7f, glm::vec3(1.0f, 1.0f, 1.0f));
         RenderText(textShader, "Minecraft    0.2.1", 20.0f, screenHeight-35.0f, 0.45f, glm::vec3(1.0f, 1.0f, 1.0f));
         
         renderDebug(textShader,screenWidth,screenHeight,camera);
@@ -337,9 +343,15 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 	if (action == GLFW_PRESS) switch(button)
 			{
 			case GLFW_MOUSE_BUTTON_LEFT:
-				 camera.ProcessMouseClick(ATTACK, deltaTime,true,gameMode); 
+                if(inGUI){
+                    std::cout<<lastX<<' '<<lastY<<'\n';
+                }else
+				    camera.ProcessMouseClick(ATTACK, deltaTime,true,gameMode);    
 				break;
 			case GLFW_MOUSE_BUTTON_RIGHT:
+                if(inGUI){
+
+                }else
                 camera.ProcessMouseClick(USE, deltaTime,true,gameMode); 
 				break;
 			default:
@@ -350,20 +362,30 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
-    if(firstMouse)
-    {
+    if(inGUI){
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         lastX = xpos;
         lastY = ypos;
-        firstMouse = false;
+        return;
+
+    }else{
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        if(firstMouse)
+        {
+            lastX = xpos;
+            lastY = ypos;
+            firstMouse = false;
+        }
+
+        GLfloat xoffset = xpos - lastX;
+        GLfloat yoffset = lastY - ypos; 
+        
+        lastX = xpos;
+        lastY = ypos;
+
+        camera.ProcessMouseMovement(xoffset, yoffset);
     }
-
-    GLfloat xoffset = xpos - lastX;
-    GLfloat yoffset = lastY - ypos; 
     
-    lastX = xpos;
-    lastY = ypos;
-
-    camera.ProcessMouseMovement(xoffset, yoffset);
 }	
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)

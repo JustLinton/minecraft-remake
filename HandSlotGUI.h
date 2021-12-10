@@ -41,7 +41,7 @@ class HandslotGUI{
     {
 
         GLfloat x = screenWidth/2.0f-182.0f*1.75f;
-        GLfloat y = 30.0f;
+        GLfloat y = -42.0f;
         GLfloat wid = 182.0f;
         GLfloat hei = 22.0f;
         GLfloat scale = 3.5f;
@@ -59,7 +59,7 @@ class HandslotGUI{
 
         glUniform1i(glGetUniformLocation(shader.Program, "sel"), sel);
         // ====================
-        // Texture 1
+        // Texture Bar
         // ====================
         glGenTextures(1, &texture1);
         glBindTexture(GL_TEXTURE_2D, texture1); // All upcoming GL_TEXTURE_2D operations now have effect on our texture object
@@ -82,7 +82,7 @@ class HandslotGUI{
 
 
             // ===================
-        // Texture 2
+        // Texture Sel
         // ===================
         glGenTextures(1, &texture2);
         glBindTexture(GL_TEXTURE_2D, texture2);
@@ -120,7 +120,6 @@ class HandslotGUI{
         glGenerateMipmap(GL_TEXTURE_2D);
         SOIL_free_image_data(image);
         glBindTexture(GL_TEXTURE_2D, 0);
-
 
 
         glActiveTexture(GL_TEXTURE0);

@@ -44,3 +44,6 @@ int chunkSize=64;
 int targetingDist=16;
 // glm::vec3 spawnPos=glm::vec3(0.0f, 4.0f*blockLength, 0.0f);
 glm::vec3 spawnPos=glm::vec3(0.0f, 0.5f, 0.0f);
+
+bool isFullScreen=true;
+bool inGUI=false;

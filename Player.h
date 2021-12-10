@@ -128,7 +128,9 @@ class Player
             // Camera options
             GLfloat MovementSpeed;
 
-            glm::vec3 target;
+            BlockLocation target;
+            //0:x+ 1:x- 2:z+ 3:z- 4:y+ 5:y- 
+            int targetFace;
             bool isTargeting;
             bool isOnTheGround;
 
@@ -146,8 +148,51 @@ class Player
                         if(isTargeting)
                               world.setBlock(target,0);
                   }else{
-                        if(isTargeting)
-                              world.setBlock(target+glm::vec3(0.0f,1.0f,0.0f),1);
+                        if(isTargeting){
+                              BlockLocation faceOn=BlockLocation(0,1,0);
+                              switch (targetFace)
+                              {
+                                    case 0:
+                                          faceOn=BlockLocation(1,0,0);
+                                          break;
+
+                                    case 1:
+                                          faceOn=BlockLocation(-1,0,0);
+                                          break;
+                                    
+                                    case 2:
+                                          faceOn=BlockLocation(0,0,1);
+                                          break;
+
+                                    case 3:
+                                          faceOn=BlockLocation(0,0,-1);
+                                          break;
+
+                                    case 4:
+                                          faceOn=BlockLocation(0,1,0);
+                                          break;
+
+                                    case 5:
+                                          faceOn=BlockLocation(0,-1,0);
+                                          break;
+
+                                    default:
+                                          break;
+                              }
+                              
+                              BlockLocation placeLoc=target+faceOn;
+                              BlockLocation playerConfilct1=getBlockLocation()+BlockLocation(0,1,0);
+                              BlockLocation playerConfilct2=getBlockLocation()+BlockLocation(0,2,0);
+
+                              if(world.checkIfBlockLocValid(placeLoc)){
+                                    if(world.getBlockTypeAt(placeLoc)==0&&playerConfilct1!=placeLoc&&playerConfilct2!=placeLoc){
+                                          world.setBlock(target+faceOn,1);
+                                    }
+                                    
+                              }
+                              
+                        }
+                              
                   }
             }
 

@@ -148,7 +148,8 @@ public:
 
     float flySpeedFunction(float x,GLfloat deltaTime,float MovementSpeed,int key){
         curFlyX[key]=x;
-        if(x<=0.5f)return 4.0f*x*x*MovementSpeed* deltaTime;
+        // if(x<=0.5f)return 4.0f*x*x*MovementSpeed* deltaTime;
+        if(x<=0.3f)return 3.3f*x*MovementSpeed* deltaTime;
         return MovementSpeed* deltaTime;
     }
 
@@ -157,7 +158,7 @@ public:
     }
 
     float stopFlyingSpeedFunction(float x,GLfloat deltaTime,float MovementSpeed,int key){
-        return std::max(0.0f,flySpeedFunction(curFlyX[key],deltaTime,MovementSpeed,key) + ((isPressingWSAD?-20.0f:-1.5f)*x*x)*MovementSpeed* deltaTime);
+        return std::max(0.0f,flySpeedFunction(curFlyX[key],deltaTime,MovementSpeed,key) + ((isPressingWSAD?-20.0f:-3.3f)*x*x)*MovementSpeed* deltaTime);
     }
 
     
@@ -387,6 +388,7 @@ public:
         glm::vec3 camPos=this->Position;
 
         float step=0.01f;
+        float faceJudgeTherashold=0.007f;
 
         camPos-=glm::vec3(0.0f,playerHeight*0.24,0.0f);
 
@@ -412,10 +414,31 @@ public:
             if(tx>=chunkSize/2||tx<-chunkSize/2||ty>=chunkSize/2||ty<-chunkSize/2||tz>=chunkSize/2||tz<-chunkSize/2)
                 continue;
 
-            // std::cout<<dist<<" : "<<tx<<' '<<ty<<' '<<tz<<endl;
+           
             if(world.chunkBlocks[getBlockRenderIndex(tx)][getBlockRenderIndex(ty)][getBlockRenderIndex(tz)]!=0){
                 player.target=glm::vec3(tx,ty,tz);
                 player.isTargeting=true;
+
+                if(std::abs(targetingLine.x-(tx+0.5))<=faceJudgeTherashold)
+                    player.targetFace=0;
+
+                if(std::abs(targetingLine.x-(tx-0.5))<=faceJudgeTherashold)
+                    player.targetFace=1;
+
+                if(std::abs(targetingLine.y-(ty+0.5))<=faceJudgeTherashold)
+                    player.targetFace=4;
+
+                if(std::abs(targetingLine.y-(ty-0.5))<=faceJudgeTherashold)
+                    player.targetFace=5;
+
+                if(std::abs(targetingLine.z-(tz+0.5))<=faceJudgeTherashold)
+                    player.targetFace=2;
+
+                if(std::abs(targetingLine.z-(tz-0.5))<=faceJudgeTherashold)
+                    player.targetFace=3;
+                
+                //  std::cout<<dist<<" : "<<targetingLine.x<<' '<<targetingLine.y<<' '<<targetingLine.z<<endl;
+
                 break;
             }else{
                 player.isTargeting=false;
@@ -516,10 +539,10 @@ public:
 
         if(player.isFlying)
         //非叠加
-            MovementSpeed=OriginalMovementSpeed*1.5;
+            MovementSpeed=OriginalMovementSpeed*1.1;
 
         if(player.isSprinting){//叠加
-            MovementSpeed*=2.3;
+            MovementSpeed*=1.5;
             pressTimeAcc['=']+=deltaTime;
         }
 
@@ -553,8 +576,10 @@ public:
         if (direction == TEST){
             if(pressing){
                 if(pressTimeAcc['`']==0.0f){
+                    inGUI=!inGUI;
+
                     // this->addVelocity(glm::vec3(-0.5f,0.0f,0.2f));
-                    world.setBlock(player.getBlockLocation(),1);
+                    // world.setBlock(player.getBlockLocation(),1);
                     //   if(player.isTargeting)mapManager.placeBlock(player.target+glm::vec3(0.0f,1.0f,0.0f),1);
                 }
                 pressTimeAcc['`']+=deltaTime;
