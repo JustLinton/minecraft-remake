@@ -5,20 +5,26 @@
 #include "Utils.h"
 #include <map>
 #include <GL/glew.h>
+#include <sstream>
 #include <string>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "GameProperties.h"
+#include "Types.h"
 
 class _BlockType_{
       public:
             std::map<int,string> names;
             const int AIR=0;
             const int GRASS_BLOCK=1;
+            const int DIRT=2;
+            const int OAK_PLANK=3;
             _BlockType_(){
                   names[AIR]=("Minecraft:AIR");
                   names[GRASS_BLOCK]=("Minecraft:GRASS_BLOCK");
+                  names[DIRT]=("Minecraft:DIRT");
+                  names[OAK_PLANK]=("Minecraft:OAK_PLANK");
             }
 }BlockType;
 
@@ -34,7 +40,8 @@ class Block{
                   blockModel=Model(path);
             }
 
-            void render(Shader shader,glm::vec3 pos,bool targeted){
+            void render(Shader shader,glm::vec3 pos,bool targeted,const vector<BlockLocation>& nearLocs){
+            // void render(Shader shader,glm::vec3 pos,bool targeted){
 
                   if(id==0)return;
 
@@ -51,6 +58,21 @@ class Block{
                   glUniform1i(glGetUniformLocation(shader.Program, "targeted"), targeted?1:0);
                   glUniformMatrix4fv(glGetUniformLocation(shader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
 
+                  nearBlockIndex=0;
+                  for(BlockLocation nl:nearLocs){
+                        tmpStr=nearBlocksPosStr;
+                        tmpStrSst="";
+                        tmpStr+="[";
+                        sst.clear();
+                        sst<<nearBlockIndex;
+                        sst>>tmpStrSst;
+                        tmpStr+=tmpStrSst;
+                        tmpStr+="]";
+                        glUniform3f(glGetUniformLocation(shader.Program, tmpStr.c_str()), nl.x,nl.y,nl.z);
+                        ++nearBlockIndex;    
+                  }
+                  glUniform1i(glGetUniformLocation(shader.Program, "nearBlocksMaxIndex"), nearBlockIndex);
+
                   blockModel.Draw(shader);
                   glUniform1i(glGetUniformLocation(shader.Program, "targeted"), 0);
             }
@@ -59,6 +81,12 @@ class Block{
             int id=BlockType.AIR;
             float length=blockLength;
             Model blockModel;
+
+            std::stringstream sst;
+            string nearBlocksPosStr="nearBlocksPos";
+            string tmpStr;
+            string tmpStrSst;
+            int nearBlockIndex=0;
 
 };
 
@@ -69,5 +97,7 @@ void initBlocks(){
       //blocksRegister
       blockStore[BlockType.AIR]=Block();
       blockStore[BlockType.GRASS_BLOCK]=Block(BlockType.GRASS_BLOCK,"models/mc_grassblock/Grass_Block.obj");
+      blockStore[BlockType.DIRT]=Block(BlockType.DIRT,"models/blocks/block_dirt/Grass_Block.obj");
+      blockStore[BlockType.OAK_PLANK]=Block(BlockType.OAK_PLANK,"models/blocks/block_oak_plank/Grass_Block.obj");
 
 }

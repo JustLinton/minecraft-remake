@@ -17,6 +17,14 @@ int getBlockRenderIndex(int a){
 	return a+chunkSize/2;
 }
 
+glm::fvec3 castRawLocationToLocation(glm::vec3 raw){
+	return raw/V3(blockLength);
+}
+
+glm::vec3  castLocationToRawLocation(glm::fvec3 loc){
+	return loc*V3(blockLength);
+}
+
 // struct BlockPosition
 // {
 //       //在我的MC中，世界坐标系统是标准的右手坐标系

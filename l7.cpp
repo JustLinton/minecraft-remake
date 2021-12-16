@@ -95,8 +95,8 @@ int main()
     glEnable(GL_DEPTH_TEST);
 
         // Setup and compile our shaders
-    // Shader shader("shaders/blinn-phong-texture.vs", "shaders/blinn-phong-texture.frag");
-    Shader shader("shaders/model_loading.vs", "shaders/model_loading.frag");
+    Shader shader("shaders/blinn-phong-texture.vs", "shaders/blinn-phong-texture.frag");
+    // Shader shader("shaders/model_loading.vs", "shaders/model_loading.frag");
     Shader textShader("shaders/text.vs", "shaders/text.frag");
     Shader guiShader("shaders/gui.vs", "shaders/gui.frag");
     Shader modelUiShader("shaders/ui_model.vs", "shaders/ui_model.frag");
@@ -145,27 +145,30 @@ int main()
         glUniformMatrix4fv(glGetUniformLocation(shader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
         glUniformMatrix4fv(glGetUniformLocation(shader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
 
-        // glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
-        // GLint lightPosLoc    = glGetUniformLocation(shader.Program, "light.position");
-        // GLint viewPosLoc     = glGetUniformLocation(shader.Program, "viewPos");
-        // glUniform3f(lightPosLoc,    lightPos.x, lightPos.y, lightPos.z);
-        // glUniform3f(viewPosLoc,     camera.Position.x, camera.Position.y, camera.Position.z);
-        // // Set lights properties
-        // glm::vec3 lightColor(1.0f);
+        glm::vec3 lightPos(130.0f, 60.0f, 130.0f);
+        GLint lightPosLoc    = glGetUniformLocation(shader.Program, "light.position");
+        GLint viewPosLoc     = glGetUniformLocation(shader.Program, "viewPos");
+        glUniform3f(lightPosLoc,    lightPos.x, lightPos.y, lightPos.z);
+        glUniform3f(viewPosLoc,     camera.Position.x, camera.Position.y, camera.Position.z);
+        // Set lights properties
+        glm::vec3 lightColor(1.0f);
 
-        // GLint lightAmbientLoc = glGetUniformLocation(shader.Program, "light.ambient");
-        // GLint lightDiffuseLoc = glGetUniformLocation(shader.Program, "light.diffuse");
-        // GLint lightSpecularLoc = glGetUniformLocation(shader.Program, "light.specular");
+        GLint lightAmbientLoc = glGetUniformLocation(shader.Program, "light.ambient");
+        GLint lightDiffuseLoc = glGetUniformLocation(shader.Program, "light.diffuse");
+        GLint lightSpecularLoc = glGetUniformLocation(shader.Program, "light.specular");
 
-        // glUniform3f(lightAmbientLoc, 0.2f, 0.2f, 0.2f);
+        glUniform3f(lightAmbientLoc, 0.45f, 0.45f, 0.45f);
         // glUniform3f(lightDiffuseLoc, 0.5f, 0.5f, 0.5f);// 让我们把这个光调暗一点，这样会看起来更自然
-        // glUniform3f(lightSpecularLoc, 1.0f, 1.0f, 1.0f);
+        glUniform3f(lightDiffuseLoc, 1.0f, 1.0f, 1.0f);
+        glUniform3f(lightSpecularLoc, 1.0f, 1.0f, 1.0f);
 
-        // glUniform3f(glGetUniformLocation(shader.Program, "material.ambient"),   1.0f, 0.5f, 0.31f);
+        glUniform3f(glGetUniformLocation(shader.Program, "material.ambient"),   0.3f, 0.3f, 0.3f);
         // glUniform3f(glGetUniformLocation(shader.Program, "material.diffuse"),   1.0f, 0.5f, 0.31f);
-        // glUniform3f(glGetUniformLocation(shader.Program, "material.specular"),  0.5f, 0.5f, 0.5f); // Specular doesn't have full effect on this object's material
-        // glUniform1f(glGetUniformLocation(shader.Program, "material.shininess"), 32.0f);
+        glUniform3f(glGetUniformLocation(shader.Program, "material.specular"),  0.5f, 0.5f, 0.5f); // Specular doesn't have full effect on this object's material
+        // glUniform3f(glGetUniformLocation(shader.Program, "material.specular"),  0.0f, 0.0f, 0.0f); // 决定了高光的颜色
+        glUniform1f(glGetUniformLocation(shader.Program, "material.shininess"), 32.0f);
 
+        glUniform1f(glGetUniformLocation(shader.Program, "blockLength"), blockLength);
 
         // Draw the loaded model
         glm::mat4 model = unitMat;
@@ -180,6 +183,8 @@ int main()
 
         //if chunkSize=128,then the pos range is [-64,63).
 
+    BlockLocation pl=player.getBlockLocation();
+
         for(int x=-chunkSize/2;x<=chunkSize/2-1;x++)
             for(int y=-chunkSize/2;y<=chunkSize/2-1;y++)
                 for(int z=-chunkSize/2;z<=chunkSize/2-1;z++){
@@ -187,10 +192,23 @@ int main()
                         int type=world.getBlockTypeAt(BlockLocation(x,y,z));
                         if(type==0)continue;
                         //targeting shading
-                        if(player.getTargetBlockLocation().x==x&&player.getTargetBlockLocation().y==y&&player.getTargetBlockLocation().z==z&&player.getIsTargeting())
-                            blockStore[type].render(shader,glm::vec3(x,y,z),true);
-                        else
-                            blockStore[type].render(shader,glm::vec3(x,y,z),false);
+                        bool targeted = (player.getTargetBlockLocation().x==x&&player.getTargetBlockLocation().y==y&&player.getTargetBlockLocation().z==z&&player.getIsTargeting());    
+
+                        vector<BlockLocation> nearBlockLocs;
+                        if(x>=pl.x-4&&x<=pl.x+5&&y>=pl.y-4&&y<=pl.y+5&&z>=pl.z-4&&z<=pl.z+5){
+                            for(int xx=x-2;xx<=x+2;xx++)
+                                for(int yy=y-2;yy<=y+2;yy++)
+                                    for(int zz=z-2;zz<=z+2;zz++){
+                                            if(!world.checkIfBlockLocValid(BlockLocation(xx,yy,zz)))continue;
+                                            int type=world.getBlockTypeAt(BlockLocation(xx,yy,zz));
+                                            if(type==0)continue;
+                                            nearBlockLocs.push_back(BlockLocation(xx,yy,zz));
+                                        }
+                        }
+
+                        blockStore[type].render(shader,glm::vec3(x,y,z),targeted,nearBlockLocs);
+                        // blockStore[type].render(shader,glm::vec3(x,y,z),targeted);
+
                 }
 
 

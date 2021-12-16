@@ -40,6 +40,10 @@ class Player
                         firstPerson->renderFirstPerson(ItemType.DIAMOND_PICKAXE);
                   else if(sel==2)
                         firstPerson->renderFirstPerson(ItemType.GRASS_BLOCK);
+                  else if(sel==3)
+                        firstPerson->renderFirstPerson(ItemType.DIRT);
+                  else if(sel==4)
+                        firstPerson->renderFirstPerson(ItemType.OAK_PLANK);
                   else  firstPerson->renderFirstPerson();
             }
 
@@ -186,7 +190,10 @@ class Player
 
                               if(world.checkIfBlockLocValid(placeLoc)){
                                     if(world.getBlockTypeAt(placeLoc)==0&&playerConfilct1!=placeLoc&&playerConfilct2!=placeLoc){
-                                          world.setBlock(target+faceOn,1);
+                                          if(handSlot==2) world.setBlock(target+faceOn,1);
+                                          if(handSlot==3) world.setBlock(target+faceOn,2);
+                                          if(handSlot==4) world.setBlock(target+faceOn,3);
+                                         
                                     }
                                     
                               }

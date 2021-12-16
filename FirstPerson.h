@@ -43,7 +43,9 @@ class FirstPerson{
                   glUniformMatrix4fv(glGetUniformLocation(modelUiShader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 
                   if(type==ItemType.HAND)drawHand();
-                  if(type==ItemType.GRASS_BLOCK)drawBlock();
+                  if(type==ItemType.GRASS_BLOCK)drawBlock(BlockType.GRASS_BLOCK);
+                  if(type==ItemType.DIRT)drawBlock(BlockType.DIRT);
+                  if(type==ItemType.OAK_PLANK)drawBlock(BlockType.OAK_PLANK);
                   if(type==ItemType.DIAMOND_PICKAXE)drawPickaxe();
             }
 
@@ -55,14 +57,15 @@ class FirstPerson{
             float screenWidth;
             float screenHeight;
 
-            void drawBlock(){
+            void drawBlock(int type){
                   model = glm::translate(model, glm::vec3(blockLength*0.5, blockLength*(-0.55), blockLength*(-1))); 
                   model = glm::scale(model, glm::vec3(0.065f));
                   model = glm::rotate(model,glm::radians(-10.0f), glm::vec3(0.0f, 0.0f, 1.0f));
                   model = glm::rotate(model,glm::radians(-20.0f), glm::vec3(0.0f, 1.0f, 0.0f));
                   model = glm::rotate(model,glm::radians(30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
                   glUniformMatrix4fv(glGetUniformLocation(modelUiShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-                  blockStore[BlockType.GRASS_BLOCK].getModel(). Draw(modelUiShader);
+                  blockStore[type].getModel().Draw(modelUiShader);
+                  
             }
 
             void drawPickaxe(){

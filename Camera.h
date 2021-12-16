@@ -186,7 +186,7 @@ public:
 
 
     void processHit(glm::vec3& sumVelocity,glm::vec3 blockPos){
-        float threashold=0.3f;
+        float threashold=0.43f;
         
         // float antiTransThreashold=0.3f;
         // float antiTransOffset=0.15f;

@@ -17,10 +17,14 @@ class _ItemType_{
             const int HAND=0;
             const int GRASS_BLOCK=1;
             const int DIAMOND_PICKAXE=2;
+            const int DIRT=3;
+            const int OAK_PLANK=4;
             _ItemType_(){
                   names[HAND]=("");
                   names[GRASS_BLOCK]=("Grass Block");
                   names[DIAMOND_PICKAXE]=("Diamond Pickaxe");
+                  names[DIRT]=("Dirt");
+                  names[OAK_PLANK]=("Oak Plank");
             }
 }ItemType;
 
