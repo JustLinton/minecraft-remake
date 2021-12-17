@@ -1,3 +1,8 @@
+// #define RTXON
+#define RTXOFF
+
+// #define SUNSET
+
 // Std. Includes
 #include <string>
 #include <sstream>
@@ -95,8 +100,15 @@ int main()
     glEnable(GL_DEPTH_TEST);
 
         // Setup and compile our shaders
+
+    #ifdef RTXON
     Shader shader("shaders/blinn-phong-texture.vs", "shaders/blinn-phong-texture.frag");
-    // Shader shader("shaders/model_loading.vs", "shaders/model_loading.frag");
+    #endif
+
+    #ifdef RTXOFF
+    Shader shader("shaders/model_loading.vs", "shaders/model_loading.frag");
+    #endif
+
     Shader textShader("shaders/text.vs", "shaders/text.frag");
     Shader guiShader("shaders/gui.vs", "shaders/gui.frag");
     Shader modelUiShader("shaders/ui_model.vs", "shaders/ui_model.frag");
@@ -134,7 +146,17 @@ int main()
         camera.updateCamPosition(deltaTime);
 
         // Clear the colorbuffer(MC天空色)
+        #ifdef RTXOFF
         glClearColor(175/256.0, 221/256.0, 254/256.0, 1.0f);
+        #endif
+
+        #ifdef RTXON
+        glClearColor(224/256.0, 240/256.0, 252/256.0, 1.0f);
+            #ifdef SUNSET
+            glClearColor(206/256.0, 191/256.0, 185/256.0, 1.0f);
+            #endif
+        #endif
+
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         shader.Use();   // <-- Don't forget this one!
@@ -145,13 +167,25 @@ int main()
         glUniformMatrix4fv(glGetUniformLocation(shader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
         glUniformMatrix4fv(glGetUniformLocation(shader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
 
-        glm::vec3 lightPos(130.0f, 60.0f, 130.0f);
+        #ifdef RTXON
+
+        glm::vec3 lightPos(130.0f, 50.0f, 130.0f);
+
+            #ifdef SUNSET
+            lightPos = glm::vec3(150.0f, 0.0f, 150.0f);
+            #endif
+        
         GLint lightPosLoc    = glGetUniformLocation(shader.Program, "light.position");
         GLint viewPosLoc     = glGetUniformLocation(shader.Program, "viewPos");
         glUniform3f(lightPosLoc,    lightPos.x, lightPos.y, lightPos.z);
         glUniform3f(viewPosLoc,     camera.Position.x, camera.Position.y, camera.Position.z);
         // Set lights properties
+
         glm::vec3 lightColor(1.0f);
+            #ifdef SUNSET
+            lightColor = glm::vec3(201/256.0, 145/256.0, 126/256.0);
+            #endif
+
 
         GLint lightAmbientLoc = glGetUniformLocation(shader.Program, "light.ambient");
         GLint lightDiffuseLoc = glGetUniformLocation(shader.Program, "light.diffuse");
@@ -160,15 +194,23 @@ int main()
         glUniform3f(lightAmbientLoc, 0.45f, 0.45f, 0.45f);
         // glUniform3f(lightDiffuseLoc, 0.5f, 0.5f, 0.5f);// 让我们把这个光调暗一点，这样会看起来更自然
         glUniform3f(lightDiffuseLoc, 1.0f, 1.0f, 1.0f);
+         #ifdef SUNSET
+            glUniform3f(lightDiffuseLoc, 0.5f, 0.5f, 0.5f);// 让我们把这个光调暗一点，这样会看起来更自然
+         #endif
         glUniform3f(lightSpecularLoc, 1.0f, 1.0f, 1.0f);
 
         glUniform3f(glGetUniformLocation(shader.Program, "material.ambient"),   0.3f, 0.3f, 0.3f);
+        #ifdef SUNSET
+            glUniform3f(glGetUniformLocation(shader.Program, "material.ambient"),   0.55f, 0.35f, 0.3f);
+        #endif
         // glUniform3f(glGetUniformLocation(shader.Program, "material.diffuse"),   1.0f, 0.5f, 0.31f);
         glUniform3f(glGetUniformLocation(shader.Program, "material.specular"),  0.5f, 0.5f, 0.5f); // Specular doesn't have full effect on this object's material
         // glUniform3f(glGetUniformLocation(shader.Program, "material.specular"),  0.0f, 0.0f, 0.0f); // 决定了高光的颜色
         glUniform1f(glGetUniformLocation(shader.Program, "material.shininess"), 32.0f);
 
         glUniform1f(glGetUniformLocation(shader.Program, "blockLength"), blockLength);
+
+        #endif
 
         // Draw the loaded model
         glm::mat4 model = unitMat;
@@ -199,12 +241,15 @@ int main()
                             for(int xx=x-2;xx<=x+2;xx++)
                                 for(int yy=y-2;yy<=y+2;yy++)
                                     for(int zz=z-2;zz<=z+2;zz++){
+                                            // if(x==xx&&y==yy&&z==zz)continue;
                                             if(!world.checkIfBlockLocValid(BlockLocation(xx,yy,zz)))continue;
                                             int type=world.getBlockTypeAt(BlockLocation(xx,yy,zz));
                                             if(type==0)continue;
                                             nearBlockLocs.push_back(BlockLocation(xx,yy,zz));
                                         }
                         }
+
+                        // if(nearBlockLocs.size())nearBlockLocs.push_back(BlockLocation(x,y+1,z));
 
                         blockStore[type].render(shader,glm::vec3(x,y,z),targeted,nearBlockLocs);
                         // blockStore[type].render(shader,glm::vec3(x,y,z),targeted);
@@ -264,6 +309,7 @@ int main()
         // glUniformMatrix4fv(glGetUniformLocation(shader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
         // blockStore[BlockType.GRASS_BLOCK].getModel().Draw(shader);
 
+        
         //=================
         //====gui and text======
         //=================

@@ -59,6 +59,94 @@ void main()
 
     // vec4 result= vec4(texture(texture_diffuse1, TexCoords));
 
+
+
+    vec4 originRes=result;
+  
+
+    //RTX ON!
+    // for(int i=0;i<=nearBlocksMaxIndex;i++){
+    //     vec3 coverBlockPos=nearBlocksPos[i];
+
+    //     vec3 reSize= vec3(blockLength);
+    //     vec3 lightPos=(light.position)/reSize;
+    //     vec3 fgPos=FragPos/reSize;
+    //     // float step=0.2;
+    //     float step=0.5;
+    //     float shadowConsiderLength=2.5;
+    //     //1.732/2
+    //     // float threas=0.868;
+    //     float threas=0.8682;
+
+    //     vec3 itePos=fgPos;
+    //     vec3 stepV=normalize(vec3(lightPos.x-fgPos.x,lightPos.y-fgPos.y,lightPos.z-fgPos.z));
+    //     // stepV=stepV*step;
+
+    //     bool covered=false;
+
+    //     // stepV = ()*(step);
+    //     for(float s=0.58;s<=shadowConsiderLength;s+=step){
+    //         itePos=itePos+stepV*s;
+    //         vec3 tmpV=coverBlockPos-itePos;
+    //         if(tmpV.x>=-threas&&tmpV.x<=threas)
+    //             if(tmpV.y>=-threas&&tmpV.y<=threas)
+    //                 if(tmpV.z>=-threas&&tmpV.z<=threas){
+    //                     // result=vec4(1.0f,1.0f,1.0f,1.0f);
+    //                     result=mix(originRes,vec4(0.0f,0.0f,0.0f,1.0f),0.6);
+    //                     covered=true;
+    //                     break;
+    //                 }      
+    //     }
+
+    //     if(covered)break;
+
+    // }
+
+
+    for(int i=0;i<=nearBlocksMaxIndex;i++){
+        
+        vec3 reSize= vec3(blockLength);
+        vec3 coverBlockPos=nearBlocksPos[i];
+        coverBlockPos=coverBlockPos*reSize;
+
+        vec3 lightPos=light.position;
+        vec3 fgPos=FragPos;
+
+        // float step=0.2;
+        float step=0.5*blockLength;
+        float shadowConsiderLength=3.0*blockLength;
+        //1.732/2
+        // float threas=0.868;
+        float threas=0.8682*blockLength;
+
+        //修复上半方块没有阴影的问题
+        // fgPos.y=fgPos.y-0.16;
+
+        vec3 itePos=fgPos;
+        vec3 stepV=normalize(vec3(lightPos.x-fgPos.x,lightPos.y-fgPos.y,lightPos.z-fgPos.z));
+        // stepV=stepV*step;
+
+        bool covered=false;
+
+        // stepV = ()*(step);
+        for(float s=0.30;s<=shadowConsiderLength;s+=step){
+            itePos=itePos+stepV*s;
+            vec3 tmpV=coverBlockPos-itePos;
+            if(tmpV.x>=-threas&&tmpV.x<=threas)
+                if(tmpV.y>=-threas&&tmpV.y<=threas)
+                    if(tmpV.z>=-threas&&tmpV.z<=threas){
+                        // result=vec4(1.0f,1.0f,1.0f,1.0f);
+                        result=mix(originRes,vec4(0.0f,0.0f,0.0f,1.0f),0.6);
+                        covered=true;
+                        break;
+                    }      
+        }
+
+        if(covered)break;
+
+    }
+
+
     if(targeted==1&&(
 
         (TexCoords.x>=0.0&&TexCoords.x<=0.006)
@@ -78,44 +166,6 @@ void main()
         ||(TexCoords.y>=0.994&&TexCoords.y<=1.0)
 
     )) result=mix(result,vec4(1.0,1.0,1.0,1.0),0.45);
-
-
-    vec4 originRes=result;
-  
-
-    //RTX ON!
-    for(int i=0;i<=nearBlocksMaxIndex;i++){
-        vec3 coverBlockPos=nearBlocksPos[i];
-
-        vec3 reSize= vec3(blockLength);
-        vec3 lightPos=(light.position)/reSize;
-        vec3 fgPos=FragPos/reSize;
-        float step=0.2;
-        //1.732/2
-        float threas=0.866;
-
-        vec3 itePos=fgPos;
-        vec3 stepV=normalize(vec3(lightPos.x-fgPos.x,lightPos.y-fgPos.y,lightPos.z-fgPos.z));
-        // stepV=stepV*step;
-
-        bool covered=false;
-
-        // stepV = ()*(step);
-        for(float s=0.5;s<=2.0;s+=step){
-            itePos=itePos+stepV;
-            vec3 tmpV=coverBlockPos-itePos;
-            if(tmpV.x>=-threas&&tmpV.x<=threas)
-                if(tmpV.y>=-threas&&tmpV.y<=threas)
-                    if(tmpV.z>=-threas&&tmpV.z<=threas){
-                        // result=vec4(1.0f,1.0f,1.0f,1.0f);
-                        result=mix(originRes,vec4(0.2f,0.2f,0.2f,1.0f),0.8);
-                        covered=true;
-                        break;
-                    }      
-
-            if(covered)break;
-        }
-    }
 
     color = result;
     // color=vec4(nearBlocksPos[0],1.0f);

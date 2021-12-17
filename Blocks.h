@@ -36,7 +36,7 @@ class Block{
 
             Block(){}
 
-            Block(int id_,string path):id(id_),length(blockLength){
+            Block(int id_,string path,glm::vec3 spec_):id(id_),length(blockLength),specLight(spec_){
                   blockModel=Model(path);
             }
 
@@ -71,7 +71,11 @@ class Block{
                         glUniform3f(glGetUniformLocation(shader.Program, tmpStr.c_str()), nl.x,nl.y,nl.z);
                         ++nearBlockIndex;    
                   }
+
                   glUniform1i(glGetUniformLocation(shader.Program, "nearBlocksMaxIndex"), nearBlockIndex);
+                  // glUniform3f(glGetUniformLocation(shader.Program, "thisBlockPos"),  pos.x,pos.y,pos.z);
+
+                  glUniform3f(glGetUniformLocation(shader.Program, "material.specular"),  specLight.x,specLight.y,specLight.z); 
 
                   blockModel.Draw(shader);
                   glUniform1i(glGetUniformLocation(shader.Program, "targeted"), 0);
@@ -88,6 +92,8 @@ class Block{
             string tmpStrSst;
             int nearBlockIndex=0;
 
+            glm::vec3 specLight=glm::vec3(0.0f,0.0f,0.0f);
+
 };
 
 std::map<int,Block> blockStore;
@@ -96,8 +102,8 @@ std::map<int,Block> blockStore;
 void initBlocks(){
       //blocksRegister
       blockStore[BlockType.AIR]=Block();
-      blockStore[BlockType.GRASS_BLOCK]=Block(BlockType.GRASS_BLOCK,"models/mc_grassblock/Grass_Block.obj");
-      blockStore[BlockType.DIRT]=Block(BlockType.DIRT,"models/blocks/block_dirt/Grass_Block.obj");
-      blockStore[BlockType.OAK_PLANK]=Block(BlockType.OAK_PLANK,"models/blocks/block_oak_plank/Grass_Block.obj");
+      blockStore[BlockType.GRASS_BLOCK]=Block(BlockType.GRASS_BLOCK,"models/mc_grassblock/Grass_Block.obj",glm::vec3(0.1f,0.1f,0.1f));
+      blockStore[BlockType.DIRT]=Block(BlockType.DIRT,"models/blocks/block_dirt/Grass_Block.obj",glm::vec3(0.1f,0.1f,0.1f));
+      blockStore[BlockType.OAK_PLANK]=Block(BlockType.OAK_PLANK,"models/blocks/block_oak_plank/Grass_Block.obj",glm::vec3(0.5f,0.5f,0.5f));
 
 }
